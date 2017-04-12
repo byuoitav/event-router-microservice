@@ -1,6 +1,4 @@
 machine:
-    pre:
-        - sudo docker run --privileged multiarch/qemu-user-static:register --reset
     services:
         - docker
     environment:
@@ -13,6 +11,7 @@ dependencies:
     pre:
         - rm -rf ~/.go_workspace
         - go get -u github.com/FiloSottile/gvt
+        - sudo docker run --privileged multiarch/qemu-user-static:register --reset
     override:
         - mkdir -p ~/.go_project/src/github.com/${CIRCLE_PROJECT_USERNAME}
         - ln -s ${HOME}/${CIRCLE_PROJECT_REPONAME} ${HOME}/.go_project/src/github.com/${CIRCLE_PROJECT_USERNAME}/${CIRCLE_PROJECT_REPONAME}
