@@ -82,6 +82,7 @@ func Recieve(eventChan chan<- zeromq.Event, exit <-chan bool, addresses []string
 	defer subscriber.Close()
 
 	for _, addr := range addresses {
+		log.Printf("Starting connection with %s", addr)
 		err = subscriber.Connect("tcp://" + addr)
 		if err != nil {
 			log.Printf("ERROR: %s", err.Error())
