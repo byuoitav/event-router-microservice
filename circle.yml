@@ -11,7 +11,7 @@ dependencies:
     pre:
         - rm -rf ~/.go_workspace
         - go get -u github.com/FiloSottile/gvt
-        - sudo apt-get update; apt-get install libzmq3-dev
+        - sudo apt-get update; sudo apt-get install libzmq3-dev
     override:
         - mkdir -p ~/.go_project/src/github.com/${CIRCLE_PROJECT_USERNAME}
         - ln -s ${HOME}/${CIRCLE_PROJECT_REPONAME} ${HOME}/.go_project/src/github.com/${CIRCLE_PROJECT_USERNAME}/${CIRCLE_PROJECT_REPONAME}
