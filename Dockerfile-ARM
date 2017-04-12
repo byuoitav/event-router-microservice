@@ -8,11 +8,14 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
         libc6-dev \
         make \
         pkg-config \
+        curl \ 
+        git \
+        libzmq3-dev \
     && rm -rf /var/lib/apt/lists/*
 
 ENV GOLANG_VERSION 1.8.1
-ENV GOLANG_DOWNLOAD_URL https://golang.org/dl/go$GOLANG_VERSION.linux-amd64.tar.gz
-ENV GOLANG_DOWNLOAD_SHA256 a579ab19d5237e263254f1eac5352efcf1d70b9dacadb6d6bb12b0911ede8994
+ENV GOLANG_DOWNLOAD_URL https://golang.org/dl/go$GOLANG_VERSION.linux-armv6l.tar.gz
+ENV GOLANG_DOWNLOAD_SHA256 e8a8326913640409028ef95c2107773f989b1b2a6e11ceb463c77c42887381da
 
 RUN curl -fsSL "$GOLANG_DOWNLOAD_URL" -o golang.tar.gz \
     && echo "$GOLANG_DOWNLOAD_SHA256  golang.tar.gz" | sha256sum -c - \
@@ -25,15 +28,10 @@ ENV PATH $GOPATH/bin:/usr/local/go/bin:$PATH
 RUN mkdir -p "$GOPATH/src" "$GOPATH/bin" && chmod -R 777 "$GOPATH"
 WORKDIR $GOPATH
 
-COPY go-wrapper /usr/local/bin/
-RUN mkdir -p /go
-RUN apt-get install libzmq3-dev
+RUN mkdir -p $GOPATH/src/github.com/byuoitav/zeromq-proxy-microservice
+ADD . $GOPATH/src/github.com/byuoitav/zeromq-proxy-microservice
 
-ADD . /go/src/github.com/byuoitav/zeromq-proxy-microservice
-
-WORKDIR /go/src/github.com/byuoitav/zeromq-proxy-microservice
-RUN gvt fetch -branch ${GITHUB_BRANCH} github.com/byuoitav/configuration-database-microservice
-RUN gvt fetch -branch ${GITHUB_BRANCH} github.com/byuoitav/av-api
+WORKDIR $GOPATH/src/github.com/byuoitav/zeromq-proxy-microservice
 RUN go get -d -v
 RUN go install -v
 
