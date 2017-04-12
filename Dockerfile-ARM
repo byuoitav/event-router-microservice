@@ -1,15 +1,15 @@
-FROM resin/armv7hf-debian-qemu
+FROM resin/raspberry-pi-alpine-golang
 
-RUN [ "cross-build-start" ]
+RUN apk update && apk add git
+RUN apk add zeromq-dev && apk add build-base
 
-RUN mkdir -p /go
-RUN apt-get install libzmq3-dev
+RUN mkdir -p $GOPATH/src/github.com/byuoitav/zeromq-proxy-microservice
+ADD . $GOPATH/src/github.com/byuoitav/zeromq-proxy-microservice
 
-ADD . /go
-WORKDIR /go
+WORKDIR $GOPATH/src/github.com/byuoitav/zeromq-proxy-microservice
+RUN go get -d -v
+RUN go install -v
 
-CMD ["/go/av-api-arm"]
+CMD ["/go/bin/zeromq-proxy-microservice"]
 
 EXPOSE 7000
-
-RUN [ "cross-build-end" ]
