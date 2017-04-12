@@ -34,8 +34,10 @@ test:
     override:
         - cd $BUILD_PATH && go test -v -race $(go list ./... | grep -v /vendor/)
     post:
-        - gvt delete github.com/byuoitav/configuration-database-microservice
-        - gvt delete github.com/byuoitav/av-api
+      - > 
+            if [ $CIRCLE_BRANCH = "stage" ||  $CIRCLE_BRANCH = "production" ]; then
+                gvt delete github.com/byuoitav/configuration-database-microservice
+                gvt delete github.com/byuoitav/av-api
 
 deployment:
     development:
