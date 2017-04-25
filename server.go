@@ -5,10 +5,11 @@ import (
 	"os"
 	"strings"
 	"sync"
+	"time"
 
 	"github.com/byuoitav/av-api/dbo"
-	"github.com/byuoitav/zeromq-proxy-miroservice/proxy"
-	"github.com/byuoitav/zeromq-proxy-miroservice/zeromq"
+	"github.com/byuoitav/event-router-microservice/tags"
+	"github.com/xuther/go-message-router/router"
 )
 
 func main() {
@@ -16,7 +17,7 @@ func main() {
 	var wg sync.WaitGroup
 
 	wg.Add(3)
-	port := 7000
+	port := "7000"
 
 	//Get all the devices with role "Event Router"
 	hostname := os.Getenv("PI_HOSTNAME")
@@ -28,19 +29,23 @@ func main() {
 
 	addresses := []string{}
 	for _, device := range devices {
-		addresses = append(addresses, device.Address)
+		addresses = append(addresses, device.Address+":7000")
 	}
 
-	inChan := make(chan zeromq.Event, 100)
-	outChan := make(chan zeromq.Event, 100)
-	exitChan := make(chan bool, 3)
+	//subscribe to the av-api and the event translator on the local pi
+	addresses = append(addresses, "localhost:7001", "localhost:7002")
 
-	log.Printf("Starting publisher")
-	go proxy.Publish(outChan, exitChan, port, wg)
-	log.Printf("Starting router")
-	go proxy.Router(inChan, outChan, exitChan, wg)
-	log.Printf("Starting Receiver")
-	go proxy.Recieve(inChan, exitChan, addresses, wg)
+	RoutingTable := make(map[string][]string)
+	RoutingTable[tags.LocalAPI] = []string{tags.TransmitAPI}
+	RoutingTable[tags.TransmitAPI] = []string{tags.LocalTransmit}
+	RoutingTable[tags.External] = []string{tags.LocalTransmit}
+
+	r := router.Router{}
+
+	err = r.Start(RoutingTable, wg, 1000, addresses, 120, time.Second*3, port)
+	if err != nil {
+		log.Fatal(err)
+	}
 
 	wg.Wait()
 }

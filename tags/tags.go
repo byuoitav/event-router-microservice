@@ -1,12 +1,4 @@
-package zeromq
-
-/*
-An Event represents a zeromq event
-*/
-type Event struct {
-	Envelope string `json:"envelope,omitempty"`
-	Data     string `json:"data,omitempty"`
-}
+package tags
 
 /*
 In the context of our system there are five main players.
