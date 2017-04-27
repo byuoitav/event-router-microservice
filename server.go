@@ -8,7 +8,7 @@ import (
 	"time"
 
 	"github.com/byuoitav/av-api/dbo"
-	"github.com/byuoitav/event-router-microservice/tags"
+	"github.com/byuoitav/event-router-microservice/eventinfrastructure"
 	"github.com/xuther/go-message-router/router"
 )
 
@@ -36,9 +36,9 @@ func main() {
 	addresses = append(addresses, "localhost:7001", "localhost:7002")
 
 	RoutingTable := make(map[string][]string)
-	RoutingTable[tags.LocalAPI] = []string{tags.TransmitAPI}
-	RoutingTable[tags.TransmitAPI] = []string{tags.LocalTransmit}
-	RoutingTable[tags.External] = []string{tags.LocalTransmit}
+	RoutingTable[eventinfrastructure.LocalAPI] = []string{eventinfrastructure.TransmitAPI}
+	RoutingTable[eventinfrastructure.TransmitAPI] = []string{eventinfrastructure.LocalTransmit}
+	RoutingTable[eventinfrastructure.External] = []string{eventinfrastructure.LocalTransmit}
 
 	r := router.Router{}
 

@@ -1,4 +1,4 @@
-package tags
+package eventinfrastructure
 
 /*
 In the context of our system there are five main players.
