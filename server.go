@@ -12,6 +12,8 @@ import (
 	"github.com/xuther/go-message-router/router"
 )
 
+var retryCount = 60
+
 func main() {
 
 	var wg sync.WaitGroup
@@ -23,9 +25,25 @@ func main() {
 	hostname := os.Getenv("PI_HOSTNAME")
 	values := strings.Split(strings.TrimSpace(hostname), "-")
 	devices, err := dbo.GetDevicesByBuildingAndRoomAndRole(values[0], values[1], "EventRouter")
+
 	if err != nil {
-		log.Fatal(err.Error())
+		for retryCount > 0 {
+			retryCount--
+			devices, err = dbo.GetDevicesByBuildingAndRoomAndRole(values[0], values[1], "EventRouter")
+			if err != nil && retryCount > 0 {
+
+				log.Printf("Connection to the Configuration DB failed, retrying in 2 seconds, will retry %v more times", retryCount)
+				timer := time.NewTimer(2 * time.Second)
+				<-timer.C
+				continue
+			} else if err != nil {
+				log.Fatal(err.Error())
+			} else if err == nil {
+				break
+			}
+		}
 	}
+	log.Printf("Connection to the DB established")
 
 	addresses := []string{}
 	for _, device := range devices {
