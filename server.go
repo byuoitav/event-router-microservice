@@ -36,9 +36,13 @@ func main() {
 	addresses = append(addresses, "localhost:7001", "localhost:7002")
 
 	RoutingTable := make(map[string][]string)
-	RoutingTable[eventinfrastructure.LocalAPI] = []string{eventinfrastructure.TransmitAPI}
-	RoutingTable[eventinfrastructure.TransmitAPI] = []string{eventinfrastructure.LocalTransmit}
-	RoutingTable[eventinfrastructure.External] = []string{eventinfrastructure.LocalTransmit}
+	RoutingTable[eventinfrastructure.Room] = []string{eventinfrastructure.UI}
+	RoutingTable[eventinfrastructure.APISuccess] = []string{eventinfrastructure.Translator,
+		eventinfrastructure.UI,
+		eventinfrastructure.Room,
+	}
+	RoutingTable[eventinfrastructure.External] = []string{eventinfrastructure.UI}
+	RoutingTable[eventinfrastructure.APIError] = []string{eventinfrastructure.UI, eventinfrastructure.Translator}
 
 	r := router.Router{}
 
