@@ -3,12 +3,11 @@ FROM resin/armv7hf-debian-qemu
 RUN [ "cross-build-start" ]
 
 RUN mkdir -p /go
-RUN apt-get install libzmq3-dev
-
 ADD . /go
+
 WORKDIR /go
 
-CMD ["/go/av-api-arm"]
+CMD ["/go/event-router-microservice-arm"]
 
 EXPOSE 7000
 

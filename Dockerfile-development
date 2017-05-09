@@ -1,15 +1,14 @@
 FROM golang:alpine
 
 RUN apk update && apk add git
-RUN apk add zeromq-dev && apk add build-base
 
 RUN mkdir -p /go/src/github.com/byuoitav
-ADD . /go/src/github.com/byuoitav/zeromq-proxy-microservice
+ADD . /go/src/github.com/byuoitav/event-router-microservice
 
-WORKDIR /go/src/github.com/byuoitav/zeromq-proxy-microservice
+WORKDIR /go/src/github.com/byuoitav/event-router-microservice	
 RUN go get -d -v
 RUN go install -v
 
-CMD ["/go/bin/zeromq-proxy-microservice"]
+CMD ["/go/bin/event-router-microservice"]
 
-EXPOSE 7000
+EXPOSE 8004
