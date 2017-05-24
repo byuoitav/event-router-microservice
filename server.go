@@ -47,6 +47,10 @@ func main() {
 
 	addresses := []string{}
 	for _, device := range devices {
+		if strings.EqualFold(device.GetFullName(), hostname) {
+			continue
+		}
+
 		addresses = append(addresses, device.Address+":7000")
 	}
 
