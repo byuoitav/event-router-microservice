@@ -9,6 +9,8 @@ ADD . /go/src/github.com/byuoitav/event-router-microservice
 
 WORKDIR /go/src/github.com/byuoitav/event-router-microservice
 
+RUN go get -u github.com/FiloSottile/gvt
+
 RUN gvt fetch -branch ${GITHUB_BRANCH} github.com/byuoitav/av-api
 
 RUN go get -d -v
