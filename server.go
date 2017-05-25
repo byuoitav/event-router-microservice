@@ -21,39 +21,34 @@ var retryCount = 60
 func main() {
 
 	var wg sync.WaitGroup
+	var err error
 
 	wg.Add(3)
 	port := "7000"
 
-	//Get all the devices with role "Event Router"
+	// get all the devices with the eventrouter role
 	hostname := os.Getenv("PI_HOSTNAME")
 	values := strings.Split(strings.TrimSpace(hostname), "-")
-	devices, err := dbo.GetDevicesByBuildingAndRoomAndRole(values[0], values[1], "EventRouter")
+	go func() {
+		for {
+			devices, err := dbo.GetDevicesByBuildingAndRoomAndRole(values[0], values[1], "EventRouter")
+			if err != nil {
+				log.Printf("[error] Connecting to the Configuration DB failed, retrying in 5 seconds.")
+				time.Sleep(5 * time.Second)
+			} else {
+				log.Printf("Connection to the Configuration DB established.")
 
-	if err != nil {
-		go func() {
-			for {
-				devices, err = dbo.GetDevicesByBuildingAndRoomAndRole(values[0], values[1], "EventRouter")
-				if err != nil {
-					log.Printf("[error] Connecting to the Configuration DB failed, retrying in 5 seconds.")
-					time.Sleep(5 * time.Second)
-				} else {
-					log.Printf("Connection to the Configuration DB established.")
-
-					addresses := []string{}
-					for _, device := range devices {
-						if strings.EqualFold(device.GetFullName(), hostname) {
-							continue
-						}
-						addresses = append(addresses, device.Address+":6999")
-						// hit each of these addresses subscription endpoint once
-						// to try and create a two-way subscription between the event routers
+				for _, device := range devices {
+					if strings.EqualFold(device.GetFullName(), hostname) {
+						continue
 					}
-					return
+					// hit each of these addresses subscription endpoint once
+					// to try and create a two-way subscription between the event routers
 				}
+				return
 			}
-		}()
-	}
+		}
+	}()
 
 	RoutingTable := make(map[string][]string)
 	RoutingTable[eventinfrastructure.Room] = []string{eventinfrastructure.UI}
@@ -65,7 +60,7 @@ func main() {
 	RoutingTable[eventinfrastructure.External] = []string{eventinfrastructure.UI}
 	RoutingTable[eventinfrastructure.APIError] = []string{eventinfrastructure.UI, eventinfrastructure.Translator}
 
-	handlers.R = router.Router{}
+	subscription.R = router.Router{}
 
 	err = subscription.R.Start(RoutingTable, wg, 1000, []string{}, 120, time.Second*3, port)
 	if err != nil {
@@ -79,6 +74,7 @@ func main() {
 	//	server.GET("/health", echo.WrapHandler(http.HandlerFunc(health.Check)))
 	server.POST("/subscribe", handlers.Subscribe)
 
+	log.Printf("Waiting for new subscriptions")
 	server.Start(":6999")
 
 	wg.Wait()
