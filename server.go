@@ -9,7 +9,10 @@ import (
 
 	"github.com/byuoitav/av-api/dbo"
 	"github.com/byuoitav/event-router-microservice/eventinfrastructure"
-	"github.com/xuther/go-message-router/router"
+	"github.com/byuoitav/event-router-microservice/handlers"
+	"github.com/byuoitav/go-message-router/router"
+	"github.com/labstack/echo"
+	"github.com/labstack/echo/middleware"
 )
 
 var retryCount = 60
@@ -59,7 +62,8 @@ func main() {
 
 	RoutingTable := make(map[string][]string)
 	RoutingTable[eventinfrastructure.Room] = []string{eventinfrastructure.UI}
-	RoutingTable[eventinfrastructure.APISuccess] = []string{eventinfrastructure.Translator,
+	RoutingTable[eventinfrastructure.APISuccess] = []string{
+		eventinfrastructure.Translator,
 		eventinfrastructure.UI,
 		eventinfrastructure.Room,
 	}
@@ -72,6 +76,15 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
+
+	server := echo.New()
+	server.Pre(middleware.RemoveTrailingSlash())
+	server.Use(middleware.CORS())
+
+	//	server.GET("/health", echo.WrapHandler(http.HandlerFunc(health.Check)))
+	server.GET("/subscribe", handlers.Subscribe)
+
+	server.Start("70000")
 
 	wg.Wait()
 }
