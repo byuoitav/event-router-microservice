@@ -1,15 +1,23 @@
 package handlers
 
 import (
-	"log"
 	"net/http"
 
+	"github.com/byuoitav/event-router-microservice/subscription"
 	"github.com/labstack/echo"
 )
 
 func Subscribe(context echo.Context) error {
-	log.Printf("called subscribe")
-	log.Printf("%s", context)
+	var req subscription.SubscribeRequest
+	err := context.Bind(&req)
+	if err != nil {
+		return context.JSON(http.StatusInternalServerError, err.Error())
+	}
+
+	err = subscription.Subscribe(req)
+	if err != nil {
+		return context.JSON(http.StatusBadRequest, err.Error())
+	}
 
 	return context.JSON(http.StatusOK, context)
 }
