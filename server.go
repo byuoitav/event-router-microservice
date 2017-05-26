@@ -2,9 +2,12 @@ package main
 
 import (
 	"log"
+	"os"
+	"strings"
 	"sync"
 	"time"
 
+	"github.com/byuoitav/av-api/dbo"
 	"github.com/byuoitav/event-router-microservice/eventinfrastructure"
 	"github.com/byuoitav/event-router-microservice/handlers"
 	"github.com/byuoitav/event-router-microservice/subscription"
@@ -23,31 +26,31 @@ func main() {
 	port := "7000"
 
 	// get all the devices with the eventrouter role
-	//	hostname := os.Getenv("PI_HOSTNAME")
-	//	if len(hostname) == 0 {
-	//		log.Fatalf("[error] PI_HOSTNAME is not set.")
-	//	}
-	//	values := strings.Split(strings.TrimSpace(hostname), "-")
-	//	go func() {
-	//		for {
-	//			devices, err := dbo.GetDevicesByBuildingAndRoomAndRole(values[0], values[1], "EventRouter")
-	//			if err != nil {
-	//				log.Printf("[error] Connecting to the Configuration DB failed, retrying in 5 seconds.")
-	//				time.Sleep(5 * time.Second)
-	//			} else {
-	//				log.Printf("Connection to the Configuration DB established.")
-	//
-	//				for _, device := range devices {
-	//					if strings.EqualFold(device.GetFullName(), hostname) {
-	//						continue
-	//					}
-	//					// hit each of these addresses subscription endpoint once
-	//					// to try and create a two-way subscription between the event routers
-	//				}
-	//				return
-	//			}
-	//		}
-	//	}()
+	hostname := os.Getenv("PI_HOSTNAME")
+	if len(hostname) == 0 {
+		log.Fatalf("[error] PI_HOSTNAME is not set.")
+	}
+	values := strings.Split(strings.TrimSpace(hostname), "-")
+	go func() {
+		for {
+			devices, err := dbo.GetDevicesByBuildingAndRoomAndRole(values[0], values[1], "EventRouter")
+			if err != nil {
+				log.Printf("[error] Connecting to the Configuration DB failed, retrying in 5 seconds.")
+				time.Sleep(5 * time.Second)
+			} else {
+				log.Printf("Connection to the Configuration DB established.")
+
+				for _, device := range devices {
+					if strings.EqualFold(device.GetFullName(), hostname) {
+						continue
+					}
+					// hit each of these addresses subscription endpoint once
+					// to try and create a two-way subscription between the event routers
+				}
+				return
+			}
+		}
+	}()
 
 	RoutingTable := make(map[string][]string)
 	RoutingTable[eventinfrastructure.Room] = []string{eventinfrastructure.UI}

@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"log"
 	"net/http"
+	"os"
 
 	"github.com/xuther/go-message-router/router"
 )
@@ -24,17 +25,16 @@ func Subscribe(sr SubscribeRequest) error {
 		log.Printf("Telling %s to subscribe to me", sr.PubAddress)
 
 		var s SubscribeRequest
-		s.Address = sr.PubAddress
+		s.Address = os.Getenv("PI_HOSTNAME") + ":7000"
 		body, err := json.Marshal(s)
 		if err != nil {
 			return err
 		}
 
-		resp, err := http.Post(sr.PubAddress+"/subscribe", "application/json", bytes.NewBuffer(body))
+		_, err := http.Post("http://"+sr.PubAddress, "application/json", bytes.NewBuffer(body))
 		if err != nil {
 			return err
 		}
-		log.Printf("[debug] response: %s", resp)
 	}
 	return nil
 }
