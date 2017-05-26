@@ -63,7 +63,7 @@ func main() {
 				bodyInBytes := bytes.NewBuffer(body)
 
 				for _, address := range addresses {
-					log.Printf("Creating a two-way connection with %s", address)
+					log.Printf("(attempting) Creating a two-way connection with %s", address)
 					_, err = http.Post(address, "application/json", bodyInBytes)
 				}
 
