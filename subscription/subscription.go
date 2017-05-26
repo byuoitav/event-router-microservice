@@ -1,26 +1,40 @@
 package subscription
 
 import (
+	"bytes"
+	"encoding/json"
 	"log"
+	"net/http"
 
-	"github.com/byuoitav/go-message-router/router"
+	"github.com/xuther/go-message-router/router"
 )
 
 var R router.Router
 
 type SubscribeRequest struct {
-	Address    string `json:"address"`
-	PubAddress string `json:"paddress,omitempty"`
+	Address    string `json:"subscribeto"`
+	PubAddress string `json:"subscribetome,omitempty"`
 }
 
 func Subscribe(sr SubscribeRequest) error {
-	log.Printf("Subscription Request from %s", sr.Address)
+	log.Printf("[new] Subscribing to %s", sr.Address)
 	R.Subscribe(sr.Address, 5, 3)
-	log.Printf("Subscribed to %s!", sr.Address)
 
 	if len(sr.PubAddress) != 0 {
-		log.Printf("subscribing to %s", sr.PubAddress)
-		log.Printf("not implemented yet")
+		log.Printf("Telling %s to subscribe to me", sr.PubAddress)
+
+		var s SubscribeRequest
+		s.Address = sr.PubAddress
+		body, err := json.Marshal(s)
+		if err != nil {
+			return err
+		}
+
+		resp, err := http.Post(sr.PubAddress+"/subscribe", "application/json", bytes.NewBuffer(body))
+		if err != nil {
+			return err
+		}
+		log.Printf("[debug] response: %s", resp)
 	}
 	return nil
 }
