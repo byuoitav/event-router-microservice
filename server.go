@@ -28,6 +28,33 @@ func main() {
 	wg.Add(3)
 	port := "7000"
 
+	RoutingTable := make(map[string][]string)
+	RoutingTable[eventinfrastructure.Room] = []string{eventinfrastructure.UI}
+	RoutingTable[eventinfrastructure.APISuccess] = []string{
+		eventinfrastructure.Translator,
+		eventinfrastructure.UI,
+		eventinfrastructure.Room,
+	}
+	RoutingTable[eventinfrastructure.External] = []string{eventinfrastructure.UI}
+	RoutingTable[eventinfrastructure.APIError] = []string{eventinfrastructure.UI, eventinfrastructure.Translator}
+
+	subscription.R = router.Router{}
+
+	err = subscription.R.Start(RoutingTable, wg, 1000, []string{}, 120, time.Second*3, port)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	server := echo.New()
+	server.Pre(middleware.RemoveTrailingSlash())
+	server.Use(middleware.CORS())
+
+	//	server.GET("/health", echo.WrapHandler(http.HandlerFunc(health.Check)))
+	server.POST("/subscribe", handlers.Subscribe)
+
+	log.Printf("Waiting for new subscriptions")
+	go server.Start(":6999")
+
 	// get all the devices with the eventrouter role
 	hostname := os.Getenv("PI_HOSTNAME")
 	if len(hostname) == 0 {
@@ -74,33 +101,5 @@ func main() {
 			}
 		}
 	}()
-
-	RoutingTable := make(map[string][]string)
-	RoutingTable[eventinfrastructure.Room] = []string{eventinfrastructure.UI}
-	RoutingTable[eventinfrastructure.APISuccess] = []string{
-		eventinfrastructure.Translator,
-		eventinfrastructure.UI,
-		eventinfrastructure.Room,
-	}
-	RoutingTable[eventinfrastructure.External] = []string{eventinfrastructure.UI}
-	RoutingTable[eventinfrastructure.APIError] = []string{eventinfrastructure.UI, eventinfrastructure.Translator}
-
-	subscription.R = router.Router{}
-
-	err = subscription.R.Start(RoutingTable, wg, 1000, []string{}, 120, time.Second*3, port)
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	server := echo.New()
-	server.Pre(middleware.RemoveTrailingSlash())
-	server.Use(middleware.CORS())
-
-	//	server.GET("/health", echo.WrapHandler(http.HandlerFunc(health.Check)))
-	server.POST("/subscribe", handlers.Subscribe)
-
-	log.Printf("Waiting for new subscriptions")
-	server.Start(":6999")
-
 	wg.Wait()
 }
