@@ -13,8 +13,8 @@ import (
 var R router.Router
 
 type SubscribeRequest struct {
-	Address    string `json:"subscribeto"`
-	PubAddress string `json:"subscribetome,omitempty"`
+	Address    string `json:"subtomeat"`
+	PubAddress string `json:"sendbackto,omitempty"`
 }
 
 func Subscribe(sr SubscribeRequest) error {
@@ -31,7 +31,7 @@ func Subscribe(sr SubscribeRequest) error {
 			return err
 		}
 
-		_, err := http.Post("http://"+sr.PubAddress, "application/json", bytes.NewBuffer(body))
+		_, err = http.Post("http://"+sr.PubAddress, "application/json", bytes.NewBuffer(body))
 		if err != nil {
 			return err
 		}

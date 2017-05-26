@@ -1,7 +1,10 @@
 package main
 
 import (
+	"bytes"
+	"encoding/json"
 	"log"
+	"net/http"
 	"os"
 	"strings"
 	"sync"
@@ -40,13 +43,30 @@ func main() {
 			} else {
 				log.Printf("Connection to the Configuration DB established.")
 
+				addresses := []string{}
 				for _, device := range devices {
 					if strings.EqualFold(device.GetFullName(), hostname) {
 						continue
 					}
 					// hit each of these addresses subscription endpoint once
 					// to try and create a two-way subscription between the event routers
+					addresses = append(addresses, device.Address+":6999")
 				}
+
+				var s subscription.SubscribeRequest
+				s.Address = hostname + ":7000"
+				s.PubAddress = hostname + ":6999"
+				body, err := json.Marshal(s)
+				if err != nil {
+					log.Printf("[error] %s", err.Error())
+				}
+				bodyInBytes := bytes.NewBuffer(body)
+
+				for _, address := range addresses {
+					log.Printf("Creating a two-way connection with %s", address)
+					_, err = http.Post(address, "application/json", bodyInBytes)
+				}
+
 				return
 			}
 		}
