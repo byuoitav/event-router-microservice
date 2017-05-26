@@ -50,12 +50,12 @@ func main() {
 					}
 					// hit each of these addresses subscription endpoint once
 					// to try and create a two-way subscription between the event routers
-					addresses = append(addresses, device.Address+":6999")
+					addresses = append(addresses, "http://"+device.Address+":6999/subscribe")
 				}
 
 				var s subscription.SubscribeRequest
 				s.Address = hostname + ":7000"
-				s.PubAddress = hostname + ":6999"
+				s.PubAddress = hostname + ":6999/subscribe"
 				body, err := json.Marshal(s)
 				if err != nil {
 					log.Printf("[error] %s", err.Error())
@@ -63,8 +63,11 @@ func main() {
 				bodyInBytes := bytes.NewBuffer(body)
 
 				for _, address := range addresses {
-					log.Printf("(attempting) Creating a two-way connection with %s", address)
-					_, err = http.Post(address, "application/json", bodyInBytes)
+					log.Printf("Creating a two-way connection with %s, *if* they are up", address)
+					resp, _ := http.Post(address, "application/json", bodyInBytes)
+					if resp != nil {
+						log.Printf("response: %s", resp)
+					}
 				}
 
 				return
