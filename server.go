@@ -53,7 +53,6 @@ func main() {
 	server.POST("/subscribe", handlers.Subscribe)
 
 	log.Printf("Waiting for new subscriptions")
-	go server.Start(":6999")
 
 	// get all the devices with the eventrouter role
 	hostname := os.Getenv("PI_HOSTNAME")
@@ -82,16 +81,20 @@ func main() {
 
 				var s subscription.SubscribeRequest
 				s.Address = hostname + ":7000"
-				s.PubAddress = hostname + ":6999/subscribe"
+				s.PubAddress = "http://" + hostname + ":6999/subscribe"
 				body, err := json.Marshal(s)
 				if err != nil {
 					log.Printf("[error] %s", err.Error())
 				}
 				bodyInBytes := bytes.NewBuffer(body)
+				log.Printf("body to send: %s", bodyInBytes)
 
 				for _, address := range addresses {
-					log.Printf("Creating a two-way connection with %s, *if* they are up", address)
-					resp, _ := http.Post(address, "application/json", bodyInBytes)
+					log.Printf("Posting to %s", address)
+					resp, err := http.Post(address, "application/json", bodyInBytes)
+					if err != nil {
+						log.Printf("[error] %s", err.Error())
+					}
 					if resp != nil {
 						log.Printf("response: %s", resp)
 					}
@@ -101,5 +104,8 @@ func main() {
 			}
 		}
 	}()
+
+	server.Start(":6999")
+
 	wg.Wait()
 }
