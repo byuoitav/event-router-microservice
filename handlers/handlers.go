@@ -12,6 +12,7 @@ func Subscribe(context echo.Context) error {
 	var req subscription.SubscribeRequest
 	err := context.Bind(&req)
 	if err != nil {
+		log.Printf("[error] %s", err.Error())
 		return context.JSON(http.StatusInternalServerError, err.Error())
 	}
 

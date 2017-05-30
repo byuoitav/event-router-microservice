@@ -54,7 +54,6 @@ func main() {
 	server.POST("/subscribe", handlers.Subscribe)
 
 	log.Printf("Waiting for new subscriptions")
-	go server.Start(":6999")
 
 	// get all the devices with the eventrouter role
 	subscription.Hostname = os.Getenv("PI_HOSTNAME")
@@ -76,8 +75,6 @@ func main() {
 					if strings.EqualFold(device.GetFullName(), subscription.Hostname) {
 						continue
 					}
-					// hit each of these addresses subscription endpoint once
-					// to try and create a two-way subscription between the event routers
 					addresses = append(addresses, device.Address+":6999/subscribe")
 				}
 
@@ -106,6 +103,7 @@ func main() {
 		}
 	}()
 
+	server.Start(":6999")
 	wg.Wait()
 }
 
