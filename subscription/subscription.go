@@ -10,7 +10,7 @@ import (
 )
 
 var R router.Router
-var IP string
+var Hostname string
 
 type SubscribeRequest struct {
 	Address    string `json:"subtomeat"`
@@ -25,7 +25,7 @@ func Subscribe(sr SubscribeRequest) error {
 		log.Printf("Telling %s to subscribe to me", sr.PubAddress)
 
 		var s SubscribeRequest
-		s.Address = IP + ":7000"
+		s.Address = Hostname + ".byu.edu:7000"
 		body, err := json.Marshal(s)
 		if err != nil {
 			return err

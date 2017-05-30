@@ -56,19 +56,12 @@ func main() {
 	log.Printf("Waiting for new subscriptions")
 	go server.Start(":6999")
 
-	// testing code !!
-	//
-	subscription.IP = GetOutboundIP()
-	log.Printf("my ip is %s", subscription.IP)
-	//
-	// end !!
-
 	// get all the devices with the eventrouter role
-	hostname := os.Getenv("PI_HOSTNAME")
-	if len(hostname) == 0 {
+	subscription.Hostname = os.Getenv("PI_HOSTNAME")
+	if len(subscription.Hostname) == 0 {
 		log.Fatalf("[error] PI_HOSTNAME is not set.")
 	}
-	values := strings.Split(strings.TrimSpace(hostname), "-")
+	values := strings.Split(strings.TrimSpace(subscription.Hostname), "-")
 	go func() {
 		for {
 			devices, err := dbo.GetDevicesByBuildingAndRoomAndRole(values[0], values[1], "EventRouter")
@@ -80,17 +73,17 @@ func main() {
 
 				addresses := []string{}
 				for _, device := range devices {
-					if strings.EqualFold(device.GetFullName(), hostname) {
+					if strings.EqualFold(device.GetFullName(), subscription.Hostname) {
 						continue
 					}
 					// hit each of these addresses subscription endpoint once
 					// to try and create a two-way subscription between the event routers
-					addresses = append(addresses, "http://"+device.Address+":6999/subscribe")
+					addresses = append(addresses, device.Address+":6999/subscribe")
 				}
 
 				var s subscription.SubscribeRequest
-				s.Address = subscription.IP + ":7000"
-				s.PubAddress = subscription.IP + ":6999/subscribe"
+				s.Address = subscription.Hostname + ".byu.edu:7000"
+				s.PubAddress = subscription.Hostname + ".byu.edu:6999/subscribe"
 				body, err := json.Marshal(s)
 				if err != nil {
 					log.Printf("[error] %s", err.Error())
@@ -99,7 +92,7 @@ func main() {
 
 				for _, address := range addresses {
 					log.Printf("Posting to %s", address)
-					resp, err := http.Post(address, "application/json", bodyInBytes)
+					resp, err := http.Post("http://"+address, "application/json", bodyInBytes)
 					if err != nil {
 						log.Printf("[error] %s", err.Error())
 					}
