@@ -34,11 +34,15 @@ func Subscribe(sr SubscribeRequest) error {
 		resp, err := http.Post("http://"+sr.PubAddress, "application/json", bytes.NewBuffer(body))
 		if err != nil {
 			log.Printf("[error] Failed to send post request: %s", err.Error())
+			return err
 		}
-		if resp.StatusCode == 200 {
-			log.Printf("Post to %s successful", sr.PubAddress)
-		} else {
-			log.Printf("[error] post to %s unsuccessful. Response:\n %s", sr.PubAddress, resp)
+		if resp != nil {
+			defer resp.Body.Close()
+			if resp.StatusCode == 200 {
+				log.Printf("Post to %s successful", sr.PubAddress)
+			} else {
+				log.Printf("[error] post to %s unsuccessful. Response:\n %s", sr.PubAddress, resp)
+			}
 		}
 	}
 	return nil

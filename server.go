@@ -92,10 +92,13 @@ func main() {
 					if err != nil {
 						log.Printf("[error] Failed to post: %s", err.Error())
 					}
-					if resp.StatusCode == 200 {
-						log.Printf("Post to %s successful", address)
-					} else {
-						log.Printf("[error] post to %s unsuccessful. Response:\n %s", address, resp)
+					if resp != nil {
+						defer resp.Body.Close()
+						if resp.StatusCode == 200 {
+							log.Printf("Post to %s successful", address)
+						} else {
+							log.Printf("[error] post to %s unsuccessful. Response:\n %s", address, resp)
+						}
 					}
 				}
 				return
