@@ -60,6 +60,7 @@ func main() {
 	if len(subscription.Hostname) == 0 {
 		log.Fatalf("[error] PI_HOSTNAME is not set.")
 	}
+	log.Printf("PI_HOSTNAME = %s", subscription.Hostname)
 	values := strings.Split(strings.TrimSpace(subscription.Hostname), "-")
 	go func() {
 		for {
