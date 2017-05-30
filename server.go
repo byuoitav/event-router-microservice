@@ -82,7 +82,7 @@ func main() {
 
 				var s subscription.SubscribeRequest
 				s.Address = hostname + ":7000"
-				s.PubAddress = "http://" + hostname + ":6999/subscribe"
+				s.PubAddress = hostname + ":6999/subscribe"
 				body, err := json.Marshal(s)
 				if err != nil {
 					log.Printf("[error] %s", err.Error())
