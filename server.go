@@ -85,11 +85,11 @@ func main() {
 				if err != nil {
 					log.Printf("[error] %s", err.Error())
 				}
-				bodyInBytes := bytes.NewBuffer(body)
 
 				for _, address := range addresses {
 					log.Printf("Posting to %s", address)
-					resp, err := http.Post("http://"+address, "application/json", bodyInBytes)
+					log.Printf("body: %s", body)
+					resp, err := http.Post("http://"+address, "application/json", bytes.NewBuffer(body))
 					if err != nil {
 						log.Printf("[error] %s", err.Error())
 					}
@@ -97,7 +97,6 @@ func main() {
 						log.Printf("response: %s", resp)
 					}
 				}
-
 				return
 			}
 		}
