@@ -57,6 +57,7 @@ func main() {
 
 	// get all the devices with the eventrouter role
 	hostname := os.Getenv("PI_HOSTNAME")
+	ip := os.Getenv("IP_ADDR")
 	if len(hostname) == 0 {
 		log.Fatalf("[error] PI_HOSTNAME is not set.")
 	}
@@ -81,8 +82,8 @@ func main() {
 				}
 
 				var s subscription.SubscribeRequest
-				s.Address = hostname + ":7000"
-				s.PubAddress = hostname + ":6999/subscribe"
+				s.Address = ip + ":7000"
+				s.PubAddress = ip + ":6999/subscribe"
 				body, err := json.Marshal(s)
 				if err != nil {
 					log.Printf("[error] %s", err.Error())
