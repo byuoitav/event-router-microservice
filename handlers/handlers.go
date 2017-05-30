@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"log"
 	"net/http"
 
 	"github.com/byuoitav/event-router-microservice/subscription"
@@ -16,6 +17,7 @@ func Subscribe(context echo.Context) error {
 
 	err = subscription.Subscribe(req)
 	if err != nil {
+		log.Printf("[error] %s", err.Error())
 		return context.JSON(http.StatusBadRequest, err.Error())
 	}
 
