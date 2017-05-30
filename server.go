@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"log"
+	"net"
 	"net/http"
 	"os"
 	"strings"
@@ -55,9 +56,15 @@ func main() {
 	log.Printf("Waiting for new subscriptions")
 	go server.Start(":6999")
 
+	// testing code !!
+	//
+	myip := GetOutboundIP()
+	log.Printf("my ip is %s", myip)
+	//
+	// end !!
+
 	// get all the devices with the eventrouter role
 	hostname := os.Getenv("PI_HOSTNAME")
-	ip := os.Getenv("IP_ADDR")
 	if len(hostname) == 0 {
 		log.Fatalf("[error] PI_HOSTNAME is not set.")
 	}
@@ -82,8 +89,8 @@ func main() {
 				}
 
 				var s subscription.SubscribeRequest
-				s.Address = ip + ":7000"
-				s.PubAddress = ip + ":6999/subscribe"
+				s.Address = myip + ":7000"
+				s.PubAddress = myip + ":6999/subscribe"
 				body, err := json.Marshal(s)
 				if err != nil {
 					log.Printf("[error] %s", err.Error())
@@ -107,4 +114,17 @@ func main() {
 	}()
 
 	wg.Wait()
+}
+
+func GetOutboundIP() string {
+	conn, err := net.Dial("udp", "8.8.8.8:80")
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer conn.Close()
+
+	localAddr := conn.LocalAddr().String()
+	idx := strings.LastIndex(localAddr, ":")
+
+	return localAddr[0:idx]
 }
