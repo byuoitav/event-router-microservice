@@ -53,6 +53,7 @@ func main() {
 	server.POST("/subscribe", handlers.Subscribe)
 
 	log.Printf("Waiting for new subscriptions")
+	go server.Start(":6999")
 
 	// get all the devices with the eventrouter role
 	hostname := os.Getenv("PI_HOSTNAME")
@@ -87,7 +88,6 @@ func main() {
 					log.Printf("[error] %s", err.Error())
 				}
 				bodyInBytes := bytes.NewBuffer(body)
-				log.Printf("body to send: %s", bodyInBytes)
 
 				for _, address := range addresses {
 					log.Printf("Posting to %s", address)
@@ -104,8 +104,6 @@ func main() {
 			}
 		}
 	}()
-
-	server.Start(":6999")
 
 	wg.Wait()
 }
