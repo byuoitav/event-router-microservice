@@ -13,7 +13,7 @@ var R router.Router
 var Hostname string
 
 type SubscribeRequest struct {
-	Address    string `json:"subtomeat"`
+	Address    string `json:"subtome"`
 	PubAddress string `json:"sendbackto,omitempty"`
 }
 
@@ -31,9 +31,14 @@ func Subscribe(sr SubscribeRequest) error {
 			return err
 		}
 
-		_, err = http.Post("http://"+sr.PubAddress, "application/json", bytes.NewBuffer(body))
+		resp, err := http.Post("http://"+sr.PubAddress, "application/json", bytes.NewBuffer(body))
 		if err != nil {
-			return err
+			log.Printf("[error] Failed to send post request: %s", err.Error())
+		}
+		if resp.StatusCode == 200 {
+			log.Printf("Post to %s successful", sr.PubAddress)
+		} else {
+			log.Printf("[error] post to %s unsuccessful. Response:\n %s", sr.PubAddress, resp)
 		}
 	}
 	return nil

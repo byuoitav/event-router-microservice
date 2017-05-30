@@ -83,18 +83,19 @@ func main() {
 				s.PubAddress = subscription.Hostname + ".byu.edu:6999/subscribe"
 				body, err := json.Marshal(s)
 				if err != nil {
-					log.Printf("[error] %s", err.Error())
+					log.Printf("[error] Failed to unmarshal subscription body: %s", err.Error())
 				}
 
 				for _, address := range addresses {
 					log.Printf("Posting to %s", address)
-					log.Printf("body: %s", body)
 					resp, err := http.Post("http://"+address, "application/json", bytes.NewBuffer(body))
 					if err != nil {
-						log.Printf("[error] %s", err.Error())
+						log.Printf("[error] Failed to post: %s", err.Error())
 					}
-					if resp != nil {
-						log.Printf("response: %s", resp)
+					if resp.StatusCode == 200 {
+						log.Printf("Post to %s successful", address)
+					} else {
+						log.Printf("[error] post to %s unsuccessful. Response:\n %s", address, resp)
 					}
 				}
 				return
