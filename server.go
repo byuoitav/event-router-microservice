@@ -58,8 +58,8 @@ func main() {
 
 	// testing code !!
 	//
-	myip := GetOutboundIP()
-	log.Printf("my ip is %s", myip)
+	subscription.IP = GetOutboundIP()
+	log.Printf("my ip is %s", subscription.IP)
 	//
 	// end !!
 
@@ -89,8 +89,8 @@ func main() {
 				}
 
 				var s subscription.SubscribeRequest
-				s.Address = myip + ":7000"
-				s.PubAddress = myip + ":6999/subscribe"
+				s.Address = subscription.IP + ":7000"
+				s.PubAddress = subscription.IP + ":6999/subscribe"
 				body, err := json.Marshal(s)
 				if err != nil {
 					log.Printf("[error] %s", err.Error())

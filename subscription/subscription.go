@@ -5,12 +5,12 @@ import (
 	"encoding/json"
 	"log"
 	"net/http"
-	"os"
 
 	"github.com/xuther/go-message-router/router"
 )
 
 var R router.Router
+var IP string
 
 type SubscribeRequest struct {
 	Address    string `json:"subtomeat"`
@@ -25,7 +25,7 @@ func Subscribe(sr SubscribeRequest) error {
 		log.Printf("Telling %s to subscribe to me", sr.PubAddress)
 
 		var s SubscribeRequest
-		s.Address = os.Getenv("PI_HOSTNAME") + ":7000"
+		s.Address = IP + ":7000"
 		body, err := json.Marshal(s)
 		if err != nil {
 			return err
