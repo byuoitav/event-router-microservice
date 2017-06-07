@@ -24,3 +24,5 @@ const APIError = "api-error"
 const Translator = "translator"
 
 const External = "external"
+
+const Health = "health"
