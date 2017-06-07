@@ -11,7 +11,6 @@ import (
 	"sync"
 	"time"
 
-	"github.com/byuoitav/av-api/dbo"
 	"github.com/byuoitav/event-router-microservice/eventinfrastructure"
 	"github.com/byuoitav/event-router-microservice/handlers"
 	"github.com/byuoitav/event-router-microservice/subscription"
@@ -19,8 +18,6 @@ import (
 	"github.com/labstack/echo/middleware"
 	"github.com/xuther/go-message-router/router"
 )
-
-var retryCount = 60
 
 func main() {
 	var wg sync.WaitGroup
@@ -38,6 +35,7 @@ func main() {
 	}
 	RoutingTable[eventinfrastructure.External] = []string{eventinfrastructure.UI}
 	RoutingTable[eventinfrastructure.APIError] = []string{eventinfrastructure.UI, eventinfrastructure.Translator}
+	RoutingTable[eventinfrastructure.UI] = []string{eventinfrastructure.Translator}
 
 	subscription.R = router.Router{}
 
@@ -61,10 +59,10 @@ func main() {
 		log.Fatalf("[error] PI_HOSTNAME is not set.")
 	}
 	log.Printf("PI_HOSTNAME = %s", subscription.Hostname)
-	values := strings.Split(strings.TrimSpace(subscription.Hostname), "-")
+	//values := strings.Split(strings.TrimSpace(subscription.Hostname), "-")
 	go func() {
 		for {
-			devices, err := dbo.GetDevicesByBuildingAndRoomAndRole(values[0], values[1], "EventRouter")
+			//	devices, err := dbo.GetDevicesByBuildingAndRoomAndRole(values[0], values[1], "EventRouter")
 			if err != nil {
 				log.Printf("[error] Connecting to the Configuration DB failed, retrying in 5 seconds.")
 				time.Sleep(5 * time.Second)
@@ -72,12 +70,12 @@ func main() {
 				log.Printf("Connection to the Configuration DB established.")
 
 				addresses := []string{}
-				for _, device := range devices {
-					if strings.EqualFold(device.GetFullName(), subscription.Hostname) {
-						continue
-					}
-					addresses = append(addresses, device.Address+":6999/subscribe")
-				}
+				//				for _, device := range devices {
+				//					if strings.EqualFold(device.GetFullName(), subscription.Hostname) {
+				//						continue
+				//					}
+				//					addresses = append(addresses, device.Address+":6999/subscribe")
+				//				}
 
 				var s subscription.SubscribeRequest
 				s.Address = subscription.Hostname + ".byu.edu:7000"
