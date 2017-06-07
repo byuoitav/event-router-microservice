@@ -20,8 +20,6 @@ import (
 	"github.com/xuther/go-message-router/router"
 )
 
-var retryCount = 60
-
 func main() {
 	var wg sync.WaitGroup
 	var err error
@@ -38,6 +36,7 @@ func main() {
 	}
 	RoutingTable[eventinfrastructure.External] = []string{eventinfrastructure.UI}
 	RoutingTable[eventinfrastructure.APIError] = []string{eventinfrastructure.UI, eventinfrastructure.Translator}
+	RoutingTable[eventinfrastructure.UI] = []string{eventinfrastructure.Translator}
 
 	subscription.R = router.Router{}
 
