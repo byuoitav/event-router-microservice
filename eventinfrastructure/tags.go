@@ -26,3 +26,5 @@ const Translator = "translator"
 const External = "external"
 
 const Health = "health"
+
+const Metrics = "metrics"
