@@ -36,7 +36,7 @@ func main() {
 	}
 	RoutingTable[eventinfrastructure.External] = []string{eventinfrastructure.UI}
 	RoutingTable[eventinfrastructure.APIError] = []string{eventinfrastructure.UI, eventinfrastructure.Translator}
-	RoutingTable[eventinfrastructure.UI] = []string{eventinfrastructure.Translator}
+	RoutingTable[eventinfrastructure.Metrics] = []string{eventinfrastructure.Translator}
 
 	subscription.R = router.Router{}
 
