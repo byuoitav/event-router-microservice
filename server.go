@@ -20,6 +20,8 @@ import (
 	"github.com/xuther/go-message-router/router"
 )
 
+var dev bool
+
 func main() {
 	var wg sync.WaitGroup
 	var err error
@@ -61,6 +63,14 @@ func main() {
 	}
 	log.Printf("PI_HOSTNAME = %s", subscription.Hostname)
 	values := strings.Split(strings.TrimSpace(subscription.Hostname), "-")
+
+	devhn := os.Getenv("DEVELOPMENT_HOSTNAME")
+	dev = false
+	if len(devhn) != 0 {
+		dev = true
+		log.Printf("Development machine. Using hostname %s", devhn)
+		subscription.Hostname = devhn
+	}
 	go func() {
 		for {
 			devices, err := dbo.GetDevicesByBuildingAndRoomAndRole(values[0], values[1], "EventRouter")
@@ -72,8 +82,10 @@ func main() {
 
 				addresses := []string{}
 				for _, device := range devices {
-					if strings.EqualFold(device.GetFullName(), subscription.Hostname) {
-						continue
+					if !dev {
+						if strings.EqualFold(device.GetFullName(), subscription.Hostname) {
+							continue
+						}
 					}
 					addresses = append(addresses, device.Address+":6999/subscribe")
 				}
