@@ -23,8 +23,9 @@ func SendSuccessfulStartup(healthCheck func() map[string]string, MicroserviceNam
 	log.Printf("[HealthCheck] Checking Health...")
 	statusReport := healthCheck()
 	allSuccess := true
-	for _, v := range statusReport {
-		if v != "ok" {
+	for k, v := range statusReport {
+		if v != "ok" && k != "Version" {
+			log.Printf("Success failed on event: %v - %v", k, v)
 			allSuccess = false
 		}
 	}
