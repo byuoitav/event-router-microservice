@@ -28,3 +28,5 @@ const External = "external"
 const Health = "health"
 
 const Metrics = "metrics"
+
+const UIFeature = "uifeature"
