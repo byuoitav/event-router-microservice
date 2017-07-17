@@ -26,6 +26,8 @@ func main() {
 	var wg sync.WaitGroup
 	var err error
 
+	GetIP()
+
 	wg.Add(3)
 	port := "7000"
 
@@ -121,6 +123,27 @@ func main() {
 
 	server.Start(":6999")
 	wg.Wait()
+}
+
+func GetIP() string {
+	var ip net.IP
+	addrs, err := net.InterfaceAddrs()
+	if err != nil {
+		return err.Error()
+	}
+
+	for _, address := range addrs {
+		if ipnet, ok := address.(*net.IPNet); ok && !ipnet.IP.IsLoopback() && strings.Contains(address.String(), "/24") {
+			ip, _, err = net.ParseCIDR(address.String())
+			if err != nil {
+				log.Fatalf("[error] %s", err.Error())
+			}
+		}
+	}
+
+	log.Printf("My IP address is %s", ip)
+
+	return string(ip)
 }
 
 func GetOutboundIP() string {
