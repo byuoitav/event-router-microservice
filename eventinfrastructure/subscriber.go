@@ -12,10 +12,9 @@ import (
 
 type Subscriber struct {
 	subscriber          subscriber.Subscriber
-	NewSubscriptionChan chan SubscriptionRequest
+	newSubscriptionChan chan SubscriptionRequest
 }
 
-// subscribe to this address, with these filters
 type SubscriptionRequest struct {
 	address string
 	filters []string
@@ -45,7 +44,7 @@ func (s Subscriber) Start(requests []SubscriptionRequest) {
 	s.addSubscriptions()
 
 	for _, sr := range requests {
-		s.NewSubscriptionChan <- sr
+		s.newSubscriptionChan <- sr
 	}
 
 	for {
@@ -59,7 +58,7 @@ func (s Subscriber) HandleConnectionRequest(cr ConnectionRequest, filters []stri
 	var sr SubscriptionRequest
 	sr.address = cr.PublisherAddr
 	sr.filters = filters
-	s.NewSubscriptionChan <- sr
+	s.newSubscriptionChan <- sr
 
 	// respond to Subscriber Endpoint
 	if len(cr.SubscriberEndpoint) > 0 && len(publisherAddr) > 0 {
@@ -92,12 +91,12 @@ func HandleConnectionRequest(context echo.Context) error {
 */
 
 func (s Subscriber) addSubscriptions() {
-	s.NewSubscriptionChan = make(chan SubscriptionRequest, 5)
+	s.newSubscriptionChan = make(chan SubscriptionRequest, 5)
 
 	go func() {
 		for {
 			select {
-			case request, ok := <-s.NewSubscriptionChan:
+			case request, ok := <-s.newSubscriptionChan:
 				if !ok {
 					log.Printf("[error] New subscription channel closed")
 				}
