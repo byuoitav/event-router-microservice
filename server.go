@@ -26,7 +26,7 @@ func main() {
 	var wg sync.WaitGroup
 	var err error
 
-	GetIP()
+	ip := GetIP()
 
 	wg.Add(3)
 	port := "7000"
