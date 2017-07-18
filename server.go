@@ -74,6 +74,9 @@ func main() {
 		log.Printf("Development machine. Using hostname %s", devhn)
 		subscription.Hostname = devhn
 	}
+
+	// overwrite hostname with ip address
+	subscription.Hostname = ip
 	go func() {
 		for {
 			devices, err := dbo.GetDevicesByBuildingAndRoomAndRole(values[0], values[1], "EventRouter")
@@ -139,6 +142,10 @@ func GetIP() string {
 				log.Fatalf("[error] %s", err.Error())
 			}
 		}
+	}
+
+	if ip == nil {
+		log.Fatalf("Failed to find an non-loopback IP Address.")
 	}
 
 	log.Printf("My IP address is %s", ip)
