@@ -33,8 +33,7 @@ After doing that, if there is a Subscriber Endpoint attached, the handler should
 */
 
 // an endpoint for others to subscribe to it's publisher, if one exists
-// optional paramerter: array of SubscriptionRequests?
-func (s Subscriber) Start(requests []SubscriptionRequest) {
+func (s Subscriber) Start(requests ...SubscriptionRequest) {
 	sub, err := subscriber.NewSubscriber(20)
 	if err != nil {
 		log.Fatalf("[error] Failed to create subscriber. error: %s", err.Error())
