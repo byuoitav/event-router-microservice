@@ -7,12 +7,14 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/xuther/go-message-router/common"
 	"github.com/xuther/go-message-router/subscriber"
 )
 
 type Subscriber struct {
 	subscriber          subscriber.Subscriber
 	newSubscriptionChan chan SubscriptionRequest
+	MessageChan         chan common.Message
 }
 
 type SubscriptionRequest struct {
@@ -32,7 +34,7 @@ handlers for each microservice should turn a connection request into a subscript
 After doing that, if there is a Subscriber Endpoint attached, the handler should respond by sending their publishers address to that endpoint.
 */
 
-func CreateSubscriber(requests ...SubscriptionRequest) Subscriber {
+func NewSubscriber(requests ...SubscriptionRequest) *Subscriber {
 	var s Subscriber
 	var err error
 
@@ -49,13 +51,14 @@ func CreateSubscriber(requests ...SubscriptionRequest) Subscriber {
 		s.newSubscriptionChan <- sr
 	}
 
-	// subscribe to messages
+	// read messages
+	s.MessageChan = make(chan common.Message, 20)
 	go s.read()
 
-	return s
+	return &s
 }
 
-func (s Subscriber) HandleConnectionRequest(cr ConnectionRequest, filters []string, publisherAddr string) error {
+func (s *Subscriber) HandleConnectionRequest(cr ConnectionRequest, filters []string, publisherAddr string) error {
 	var sr SubscriptionRequest
 	sr.address = cr.PublisherAddr
 	sr.filters = filters
@@ -83,7 +86,7 @@ func (s Subscriber) HandleConnectionRequest(cr ConnectionRequest, filters []stri
 	return nil
 }
 
-func (s Subscriber) addSubscriptions() {
+func (s *Subscriber) addSubscriptions() {
 	for {
 		select {
 		case request, ok := <-s.newSubscriptionChan:
@@ -104,10 +107,10 @@ func (s Subscriber) addSubscriptions() {
 	}
 }
 
-func (s Subscriber) read() {
+func (s *Subscriber) read() {
 	for {
 		message := s.subscriber.Read()
 		log.Printf("[subscriber] Recieved message: %s", message)
-		// write it back into a diffrent channel for someone else to read from?
+		s.MessageChan <- message
 	}
 }
