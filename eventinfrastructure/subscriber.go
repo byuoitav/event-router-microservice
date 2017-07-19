@@ -32,25 +32,27 @@ handlers for each microservice should turn a connection request into a subscript
 After doing that, if there is a Subscriber Endpoint attached, the handler should respond by sending their publishers address to that endpoint.
 */
 
-// an endpoint for others to subscribe to it's publisher, if one exists
-func (s Subscriber) Start(requests ...SubscriptionRequest) {
-	sub, err := subscriber.NewSubscriber(20)
+func CreateSubscriber(requests ...SubscriptionRequest) Subscriber {
+	var s Subscriber
+	var err error
+
+	s.subscriber, err = subscriber.NewSubscriber(20)
 	if err != nil {
 		log.Fatalf("[error] Failed to create subscriber. error: %s", err.Error())
 	}
 
-	s.subscriber = sub
-	s.addSubscriptions()
+	s.newSubscriptionChan = make(chan SubscriptionRequest, 5)
+	go s.addSubscriptions()
 
+	// subscribe to each of the requested addresses
 	for _, sr := range requests {
 		s.newSubscriptionChan <- sr
 	}
 
-	for {
-		message := s.subscriber.Read()
-		log.Printf("[subscriber] Recieved message: %s", message)
-		// write it back into a diffrent channel for someone else to read from?
-	}
+	// subscribe to messages
+	go s.read()
+
+	return s
 }
 
 func (s Subscriber) HandleConnectionRequest(cr ConnectionRequest, filters []string, publisherAddr string) error {
@@ -73,6 +75,7 @@ func (s Subscriber) HandleConnectionRequest(cr ConnectionRequest, filters []stri
 		if err != nil {
 			return err
 		}
+		// while loop? continue posting until you get a success? maybe only if the server isn't up yet?
 		if res.StatusCode != 200 {
 			log.Printf("[error] response from %s: %v", cr.SubscriberEndpoint, res)
 		}
@@ -80,36 +83,31 @@ func (s Subscriber) HandleConnectionRequest(cr ConnectionRequest, filters []stri
 	return nil
 }
 
-/*
-func HandleConnectionRequest(context echo.Context) error {
-	var cr ConnectionRequest
-	context.Bind(&cr)
-
-	return context.JSON(http.StatusOK, "success")
-}
-*/
-
 func (s Subscriber) addSubscriptions() {
-	s.newSubscriptionChan = make(chan SubscriptionRequest, 5)
+	for {
+		select {
+		case request, ok := <-s.newSubscriptionChan:
+			if !ok {
+				log.Printf("[error] New subscription channel closed")
+			}
+			// handle request for new subscription
+			log.Printf("[subscriber] Starting subscription to %s", request.address)
+			err := s.subscriber.Subscribe(request.address, request.filters)
+			for err != nil {
+				log.Printf("[error] failed to subscribe. Error %s", err)
+				log.Printf("trying again in 5 seconds...")
+				time.Sleep(5 * time.Second)
 
-	go func() {
-		for {
-			select {
-			case request, ok := <-s.newSubscriptionChan:
-				if !ok {
-					log.Printf("[error] New subscription channel closed")
-				}
-				// handle request for new subscription
-				log.Printf("[subscriber] Starting subscription to %s", request.address)
-				err := s.subscriber.Subscribe(request.address, request.filters)
-				for err != nil {
-					log.Printf("[error] failed to subscribe. Error %s", err)
-					log.Printf("trying again in 5 seconds...")
-					time.Sleep(5 * time.Second)
-
-					err = s.subscriber.Subscribe(request.address, request.filters)
-				}
+				err = s.subscriber.Subscribe(request.address, request.filters)
 			}
 		}
-	}()
+	}
+}
+
+func (s Subscriber) read() {
+	for {
+		message := s.subscriber.Read()
+		log.Printf("[subscriber] Recieved message: %s", message)
+		// write it back into a diffrent channel for someone else to read from?
+	}
 }

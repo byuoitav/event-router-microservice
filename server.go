@@ -115,7 +115,7 @@ func main() {
 						if resp.StatusCode == 200 {
 							log.Printf("Post to %s successful", address)
 						} else {
-							log.Printf("[error] post to %s unsuccessful. Response:\n %s", address, resp)
+							log.Printf("[error] post to %s unsuccessful. Response:\n %v", address, resp)
 						}
 					}
 				}
