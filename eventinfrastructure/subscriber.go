@@ -29,8 +29,6 @@ type ConnectionRequest struct {
 }
 
 /* sooo....
-handlers for each microservice should turn a connection request into a subscription request, and then add that request into their NewSubscriptionChan.
-
 After doing that, if there is a Subscriber Endpoint attached, the handler should respond by sending their publishers address to that endpoint.
 */
 
@@ -60,9 +58,13 @@ func NewSubscriber(requests ...SubscriptionRequest) *Subscriber {
 
 func (s *Subscriber) HandleConnectionRequest(cr ConnectionRequest, filters []string, publisherAddr string) error {
 	var sr SubscriptionRequest
-	sr.address = cr.PublisherAddr
-	sr.filters = filters
-	s.newSubscriptionChan <- sr
+	if len(cr.PublisherAddr) > 0 && len(filters) > 0 {
+		sr.address = cr.PublisherAddr
+		sr.filters = filters
+		s.newSubscriptionChan <- sr
+	} else {
+		log.Printf("Request is missing an address to subscribe to and/or filters")
+	}
 
 	// respond to Subscriber Endpoint
 	if len(cr.SubscriberEndpoint) > 0 && len(publisherAddr) > 0 {
