@@ -52,7 +52,7 @@ func NewPublisher(port string) *Publisher {
 	return &p
 }
 
-func PublishEvent(p Publisher, e Event, eventType string) error {
+func (p *Publisher) PublishEvent(e Event, eventType string) error {
 	toSend, err := json.Marshal(&e)
 	if err != nil {
 		return err
@@ -65,6 +65,6 @@ func PublishEvent(p Publisher, e Event, eventType string) error {
 	return nil
 }
 
-func PublishCommonMessage(p Publisher, m common.Message) {
+func (p *Publisher) PublishCommonMessage(m common.Message) {
 	p.writeChan <- m
 }
