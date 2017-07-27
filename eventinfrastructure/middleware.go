@@ -3,7 +3,6 @@ package eventinfrastructure
 import (
 	"bytes"
 	"encoding/json"
-	"errors"
 	"io/ioutil"
 	"log"
 	"net"
@@ -80,36 +79,6 @@ func SendConnectionRequest(url string, req ConnectionRequest) {
 
 	log.Printf("Successfully posted connection request to %s", url)
 	resp.Body.Close()
-}
-
-func Subscribe(context echo.Context) error {
-	var cr ConnectionRequest
-	context.Bind(&cr)
-	log.Printf("Recieved subscription request for %s", cr.PublisherAddr)
-
-	// this awful looking chain just makes sure that each of the parameters are set
-	// and pulls them out of context
-	s := context.Get(ContextSubscriber)
-	if sub, ok := s.(*Subscriber); ok {
-		f := context.Get(ContextFilters)
-		if filters, ok := f.([]string); ok {
-			p := context.Get(ContextPublisherAddress)
-			if pubAddr, ok := p.(string); ok {
-				err := sub.HandleConnectionRequest(cr, filters, pubAddr)
-				if err != nil {
-					return context.JSON(http.StatusInternalServerError, err.Error())
-				}
-			} else {
-				return context.JSON(http.StatusInternalServerError, errors.New("Publisher Address is not set"))
-			}
-		} else {
-			return context.JSON(http.StatusInternalServerError, errors.New("Filters are not set"))
-		}
-	} else {
-		return context.JSON(http.StatusInternalServerError, errors.New("Subscriber is not set"))
-	}
-
-	return context.JSON(http.StatusOK, nil)
 }
 
 func GetIP() string {

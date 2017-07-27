@@ -4,19 +4,16 @@ import (
 	"log"
 	"os"
 	"sync"
-	"time"
 
 	"github.com/byuoitav/event-router-microservice/eventinfrastructure"
 	"github.com/labstack/echo"
 	"github.com/labstack/echo/middleware"
-	"github.com/xuther/go-message-router/router"
 )
 
 var dev bool
 
 func main() {
 	var wg sync.WaitGroup
-	var err error
 
 	wg.Add(3)
 	port := "7000"
@@ -33,19 +30,14 @@ func main() {
 	RoutingTable[eventinfrastructure.Metrics] = []string{eventinfrastructure.Translator}
 	RoutingTable[eventinfrastructure.UIFeature] = []string{eventinfrastructure.Room}
 
-	router := router.Router{}
-
-	err = router.Start(RoutingTable, wg, 1000, []string{}, 120, time.Second*3, port)
-	if err != nil {
-		log.Fatal(err)
-	}
+	router := eventinfrastructure.NewRouter(RoutingTable, wg, port)
 
 	server := echo.New()
 	server.Pre(middleware.RemoveTrailingSlash())
 	server.Use(middleware.CORS())
 
 	//	server.GET("/health", echo.WrapHandler(http.HandlerFunc(health.Check)))
-	server.POST("/subscribe", eventinfrastructure.Subscribe)
+	server.POST("/subscribe", router.HandleRequest)
 	log.Printf("Waiting for new subscriptions")
 
 	//	ip := eventinfrastructure.GetIP()
