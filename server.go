@@ -30,7 +30,7 @@ func main() {
 	RoutingTable[eventinfrastructure.Metrics] = []string{eventinfrastructure.Translator}
 	RoutingTable[eventinfrastructure.UIFeature] = []string{eventinfrastructure.Room}
 
-	router := eventinfrastructure.NewRouter(RoutingTable, wg, port, "localhost:7003")
+	router := eventinfrastructure.NewRouter(RoutingTable, wg, port)
 
 	server := echo.New()
 	server.Pre(middleware.RemoveTrailingSlash())

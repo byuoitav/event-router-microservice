@@ -27,8 +27,8 @@ type ConnectionRequest struct {
 func NewRouter(routingTable map[string][]string, wg sync.WaitGroup, port string, addrs ...string) *Router {
 	var r Router
 
-	router := router.Router{}
-	err := router.Start(routingTable, wg, 1000, []string{}, 120, time.Second*3, port)
+	r.router = router.Router{}
+	err := r.router.Start(routingTable, wg, 1000, []string{}, 120, time.Second*3, port)
 	if err != nil {
 		log.Fatalf(err.Error())
 	}
@@ -39,7 +39,6 @@ func NewRouter(routingTable map[string][]string, wg sync.WaitGroup, port string,
 	// subscribe to each of the requested addresses
 	for _, addr := range addrs {
 		r.newSubscriptionChan <- addr
-		r.router.Subscribe(addr, 5, 5)
 	}
 
 	r.address = GetIP() + ":" + port
@@ -105,7 +104,7 @@ func (r *Router) addSubscriptions() {
 				log.Printf("[error] New subscription channel closed")
 			}
 			log.Printf("[router] Adding subscription to %s", request)
-			r.router.Subscribe(request, 10, time.Second*1)
+			r.router.Subscribe(request, 10, 3)
 		}
 	}
 }
