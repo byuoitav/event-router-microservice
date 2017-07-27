@@ -38,7 +38,6 @@ func main() {
 	// find a way to not hard code this?
 	// av-api, touchpanel-ui, event-translator
 	router := eventinfrastructure.NewRouter(RoutingTable, wg, port, "localhost:7001", "localhost:7003", "localhost:7002")
-	//	router := eventinfrastructure.NewRouter(RoutingTable, wg, port)
 
 	server := echo.New()
 	server.Pre(middleware.RemoveTrailingSlash())
