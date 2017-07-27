@@ -1,10 +1,7 @@
 package eventinfrastructure
 
 import (
-	"bytes"
-	"encoding/json"
 	"errors"
-	"io/ioutil"
 	"log"
 	"net/http"
 	"sync"
@@ -73,27 +70,7 @@ func (r *Router) HandleConnectionRequest(cr ConnectionRequest) error {
 		var response ConnectionRequest
 		response.PublisherAddr = r.address
 
-		body, err := json.Marshal(response)
-		if err != nil {
-			return err
-		}
-
-		resp, err := http.Post(cr.SubscriberEndpoint, "application/json", bytes.NewBuffer(body))
-		for err != nil || resp.StatusCode != 200 {
-			if resp != nil {
-				body, _ := ioutil.ReadAll(resp.Body)
-				log.Printf("[error] failed to post. Response: (%v) %s", resp.StatusCode, body)
-			} else {
-				log.Printf("[error] failed to post. Error: %s", err.Error())
-			}
-
-			log.Printf("Trying again in 5 seconds.")
-			time.Sleep(5 * time.Second)
-			resp, err = http.Post(cr.SubscriberEndpoint, "application/json", bytes.NewBuffer(body))
-		}
-
-		log.Printf("[router] Successfully posted connection request to %s", cr.SubscriberEndpoint)
-		resp.Body.Close()
+		SendConnectionRequest(cr.SubscriberEndpoint, response, true)
 	}
 	return nil
 }

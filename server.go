@@ -73,7 +73,10 @@ func main() {
 				cr.SubscriberEndpoint = ip + ".byu.edu:6999/subscribe"
 
 				for _, address := range addresses {
-					eventinfrastructure.SendConnectionRequest("http://"+address, cr, false)
+					err = eventinfrastructure.SendConnectionRequest("http://"+address, cr, false)
+					if err != nil {
+						log.Printf("[error] %s", err)
+					}
 				}
 				return
 			}

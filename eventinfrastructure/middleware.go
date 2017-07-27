@@ -3,6 +3,8 @@ package eventinfrastructure
 import (
 	"bytes"
 	"encoding/json"
+	"errors"
+	"fmt"
 	"io/ioutil"
 	"log"
 	"net"
@@ -25,7 +27,7 @@ func BindPublisher(p *Publisher) echo.MiddlewareFunc {
 	}
 }
 
-func SendConnectionRequest(url string, req ConnectionRequest, retry bool) {
+func SendConnectionRequest(url string, req ConnectionRequest, retry bool) error {
 	body, err := json.Marshal(req)
 	if err != nil {
 		log.Printf("[error] %s", err.Error())
@@ -51,10 +53,12 @@ func SendConnectionRequest(url string, req ConnectionRequest, retry bool) {
 
 	if err == nil {
 		if resp.StatusCode == 200 {
-			log.Printf("Successfully established connection with %s", url)
+			log.Printf("Successfully posted connection request to %s", url)
 			resp.Body.Close()
+			return nil
 		}
 	}
+	return errors.New(fmt.Sprintf("failed to post connection request to %s", url))
 }
 
 func GetIP() string {
