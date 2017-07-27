@@ -16,10 +16,6 @@ type Subscriber struct {
 	MessageChan   chan common.Message
 }
 
-type SubscriptionRequest struct {
-	Address string `json:"address"`
-}
-
 func NewSubscriber(filters []string, requests ...string) *Subscriber {
 	var s Subscriber
 	var err error
@@ -46,10 +42,14 @@ func NewSubscriber(filters []string, requests ...string) *Subscriber {
 }
 
 func (s *Subscriber) HandleSubscriptionRequest(context echo.Context) error {
-	var sr SubscriptionRequest
-	context.Bind(&sr)
+	var cr ConnectionRequest
+	context.Bind(&cr)
 
-	s.subscriptions <- sr.Address
+	if len(cr.PublisherAddr) > 0 {
+		s.subscriptions <- cr.PublisherAddr
+	} else {
+		return context.JSON(http.StatusBadRequest, "publisher-address can not be empty.")
+	}
 	return context.JSON(http.StatusOK, nil)
 }
 

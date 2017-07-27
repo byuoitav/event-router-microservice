@@ -3,6 +3,7 @@ package eventinfrastructure
 import (
 	"bytes"
 	"encoding/json"
+	"errors"
 	"io/ioutil"
 	"log"
 	"net/http"
@@ -50,7 +51,6 @@ func NewRouter(routingTable map[string][]string, wg sync.WaitGroup, port string,
 func (r *Router) HandleRequest(context echo.Context) error {
 	var cr ConnectionRequest
 	context.Bind(&cr)
-	log.Printf("[router] Recieved subscription request for %s", cr.PublisherAddr)
 
 	err := r.HandleConnectionRequest(cr)
 	if err != nil {
@@ -65,12 +65,13 @@ func (r *Router) HandleConnectionRequest(cr ConnectionRequest) error {
 		r.newSubscriptionChan <- cr.PublisherAddr
 	} else {
 		log.Printf("[error] request is missing an address to subscribe to")
+		return errors.New("request is missing an address to subscribe to")
 	}
 
 	// respond to Subscriber Endpoint
 	if len(cr.SubscriberEndpoint) > 0 && len(r.address) > 0 {
-		var response SubscriptionRequest
-		response.Address = r.address
+		var response ConnectionRequest
+		response.PublisherAddr = r.address
 
 		body, err := json.Marshal(response)
 		if err != nil {
