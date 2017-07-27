@@ -7,6 +7,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/fatih/color"
 	"github.com/labstack/echo"
 	"github.com/xuther/go-message-router/router"
 )
@@ -23,11 +24,15 @@ type ConnectionRequest struct {
 }
 
 func NewRouter(routingTable map[string][]string, wg sync.WaitGroup, port string, addrs ...string) *Router {
+	color.Set(color.FgCyan)
+	defer color.Unset()
+
 	var r Router
 
 	r.router = router.Router{}
 	err := r.router.Start(routingTable, wg, 1000, []string{}, 120, time.Second*3, port)
 	if err != nil {
+		color.Set(color.FgHiRed)
 		log.Fatalf(err.Error())
 	}
 
@@ -46,6 +51,9 @@ func NewRouter(routingTable map[string][]string, wg sync.WaitGroup, port string,
 }
 
 func (r *Router) HandleRequest(context echo.Context) error {
+	color.Set(color.FgCyan)
+	defer color.Unset()
+
 	var cr ConnectionRequest
 	context.Bind(&cr)
 
@@ -58,9 +66,13 @@ func (r *Router) HandleRequest(context echo.Context) error {
 }
 
 func (r *Router) HandleConnectionRequest(cr ConnectionRequest) error {
+	color.Set(color.FgGreen)
+	defer color.Unset()
+
 	if len(cr.PublisherAddr) > 0 {
 		r.newSubscriptionChan <- cr.PublisherAddr
 	} else {
+		color.Set(color.FgHiRed)
 		log.Printf("[error] request is missing an address to subscribe to")
 		return errors.New("request is missing an address to subscribe to")
 	}
@@ -80,10 +92,14 @@ func (r *Router) addSubscriptions() {
 		select {
 		case request, ok := <-r.newSubscriptionChan:
 			if !ok {
+				color.Set(color.FgHiRed)
 				log.Printf("[error] New subscription channel closed")
+				color.Unset()
 			}
+			color.Set(color.FgCyan)
 			log.Printf("[router] Adding subscription to %s", request)
 			r.router.Subscribe(request, 10, 3)
+			color.Unset()
 		}
 	}
 }

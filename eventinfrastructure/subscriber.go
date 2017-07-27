@@ -4,6 +4,7 @@ import (
 	"log"
 	"net/http"
 
+	"github.com/fatih/color"
 	"github.com/labstack/echo"
 	"github.com/xuther/go-message-router/common"
 	"github.com/xuther/go-message-router/subscriber"
@@ -17,11 +18,15 @@ type Subscriber struct {
 }
 
 func NewSubscriber(filters []string, requests ...string) *Subscriber {
+	color.Set(color.FgBlue)
+	defer color.Unset()
+
 	var s Subscriber
 	var err error
 
 	s.subscriber, err = subscriber.NewSubscriber(20)
 	if err != nil {
+		color.Set(color.FgHiRed)
 		log.Fatalf("[error] Failed to create subscriber. error: %s", err.Error())
 	}
 
@@ -57,11 +62,15 @@ func (s *Subscriber) addAddresses() {
 	for {
 		select {
 		case addr, ok := <-s.subscriptions:
+			color.Set(color.FgBlue)
 			if !ok {
+				color.Set(color.FgHiRed)
 				log.Printf("[error] subscriber address channel closed")
+				color.Unset()
 			}
 			log.Printf("[subscriber] Subscribing to %s", addr)
 			s.subscriber.Subscribe(addr, s.filters)
+			color.Unset()
 		}
 	}
 }
@@ -69,7 +78,11 @@ func (s *Subscriber) addAddresses() {
 func (s *Subscriber) read() {
 	for {
 		message := s.subscriber.Read()
+
+		color.Set(color.FgBlue)
 		log.Printf("[subscriber] Recieved message: %s", message)
+		color.Unset()
+
 		s.MessageChan <- message
 	}
 }
