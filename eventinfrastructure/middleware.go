@@ -25,7 +25,7 @@ func BindPublisher(p *Publisher) echo.MiddlewareFunc {
 	}
 }
 
-func SendConnectionRequest(url string, req ConnectionRequest) {
+func SendConnectionRequest(url string, req ConnectionRequest, retry bool) {
 	body, err := json.Marshal(req)
 	if err != nil {
 		log.Printf("[error] %s", err.Error())
@@ -40,13 +40,21 @@ func SendConnectionRequest(url string, req ConnectionRequest) {
 			log.Printf("[error] failed to post. Error: %s", err.Error())
 		}
 
+		if !retry {
+			break
+		}
+
 		log.Printf("Trying again in 5 seconds.")
 		time.Sleep(5 * time.Second)
 		resp, err = http.Post(url, "application/json", bytes.NewBuffer(body))
 	}
 
-	log.Printf("Successfully posted connection request to %s", url)
-	resp.Body.Close()
+	if err == nil {
+		if resp.StatusCode == 200 {
+			log.Printf("Successfully established connection with %s", url)
+			resp.Body.Close()
+		}
+	}
 }
 
 func GetIP() string {

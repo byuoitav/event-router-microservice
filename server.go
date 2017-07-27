@@ -3,8 +3,11 @@ package main
 import (
 	"log"
 	"os"
+	"strings"
 	"sync"
+	"time"
 
+	"github.com/byuoitav/av-api/dbo"
 	"github.com/byuoitav/event-router-microservice/eventinfrastructure"
 	"github.com/labstack/echo"
 	"github.com/labstack/echo/middleware"
@@ -39,62 +42,43 @@ func main() {
 	//	server.GET("/health", echo.WrapHandler(http.HandlerFunc(health.Check)))
 	server.POST("/subscribe", router.HandleRequest)
 
-	//	ip := eventinfrastructure.GetIP()
+	ip := eventinfrastructure.GetIP()
 	pihn := os.Getenv("PI_HOSTNAME")
 	if len(pihn) == 0 {
 		log.Fatalf("PI_HOSTNAME is not set.")
 	}
-	//	values := strings.Split(strings.TrimSpace(pihn), "-")
+	values := strings.Split(strings.TrimSpace(pihn), "-")
 
-	/*
-		go func() {
-			for {
-				devices, err := dbo.GetDevicesByBuildingAndRoomAndRole(values[0], values[1], "EventRouter")
-				if err != nil {
-					log.Printf("[error] Connecting to the Configuration DB failed, retrying in 5 seconds.")
-					time.Sleep(5 * time.Second)
-				} else {
-					log.Printf("Connection to the Configuration DB established.")
+	go func() {
+		for {
+			devices, err := dbo.GetDevicesByBuildingAndRoomAndRole(values[0], values[1], "EventRouter")
+			if err != nil {
+				log.Printf("[error] Connecting to the Configuration DB failed, retrying in 5 seconds.")
+				time.Sleep(5 * time.Second)
+			} else {
+				log.Printf("Connection to the Configuration DB established.")
 
-					addresses := []string{}
-					for _, device := range devices {
-						if !dev {
-							if strings.EqualFold(device.GetFullName(), pihn) {
-								continue
-							}
-						}
-						addresses = append(addresses, device.Address+":6999/subscribe")
-					}
-
-					var s subscription.SubscribeRequest
-					s.Address = ip + ".byu.edu:7000"
-					s.PubAddress = ip + ".byu.edu:6999/subscribe"
-
-					body, err := json.Marshal(s)
-					if err != nil {
-						log.Printf("[error] Failed to unmarshal subscription body: %s", err.Error())
-					}
-
-					for _, address := range addresses {
-						log.Printf("Posting to %s", address)
-						resp, err := http.Post("http://"+address, "application/json", bytes.NewBuffer(body))
-						if err != nil {
-							log.Printf("[error] Failed to post: %s", err.Error())
-						}
-						if resp != nil {
-							defer resp.Body.Close()
-							if resp.StatusCode == 200 {
-								log.Printf("Post to %s successful", address)
-							} else {
-								log.Printf("[error] post to %s unsuccessful. Response:\n %v", address, resp)
-							}
+				addresses := []string{}
+				for _, device := range devices {
+					if !dev {
+						if strings.EqualFold(device.GetFullName(), pihn) {
+							continue
 						}
 					}
-					return
+					addresses = append(addresses, device.Address+":6999/subscribe")
 				}
+
+				var cr eventinfrastructure.ConnectionRequest
+				cr.PublisherAddr = ip + ".byu.edu:7000"
+				cr.SubscriberEndpoint = ip + ".byu.edu:6999/subscribe"
+
+				for _, address := range addresses {
+					eventinfrastructure.SendConnectionRequest("http://"+address, cr, false)
+				}
+				return
 			}
-		}()
-	*/
+		}
+	}()
 
 	server.Start(":6999")
 	wg.Wait()
