@@ -41,7 +41,8 @@ func NewRouter(routingTable map[string][]string, wg sync.WaitGroup, port string,
 		r.newSubscriptionChan <- addr
 	}
 
-	r.address = GetIP() + ":" + port
+	//	r.address = GetIP() + ":" + port
+	r.address = "localhost:" + port
 
 	return &r
 }
