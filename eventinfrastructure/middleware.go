@@ -1,11 +1,16 @@
 package eventinfrastructure
 
 import (
+	"bytes"
+	"encoding/json"
 	"errors"
+	"io/ioutil"
 	"log"
 	"net"
 	"net/http"
+	"os"
 	"strings"
+	"time"
 
 	"github.com/labstack/echo"
 )
@@ -51,6 +56,30 @@ func BindFiltersAndPublisherAddress(filters []string, publisherAddr string) echo
 			return next(c)
 		}
 	}
+}
+
+func SendConnectionRequest(url string, req ConnectionRequest) {
+	body, err := json.Marshal(req)
+	if err != nil {
+		log.Printf("[error] %s", err.Error())
+	}
+
+	resp, err := http.Post(url, "application/json", bytes.NewBuffer(body))
+	for err != nil || resp.StatusCode != 200 {
+		if resp != nil {
+			body, _ := ioutil.ReadAll(resp.Body)
+			log.Printf("[error] failed to post. Response: (%v) %s", resp.StatusCode, body)
+		} else {
+			log.Printf("[error] failed to post. Error: %s", err.Error())
+		}
+
+		log.Printf("Trying again in 5 seconds.")
+		time.Sleep(5 * time.Second)
+		resp, err = http.Post(url, "application/json", bytes.NewBuffer(body))
+	}
+
+	log.Printf("Successfully posted connection request to %s", url)
+	resp.Body.Close()
 }
 
 func Subscribe(context echo.Context) error {
@@ -100,10 +129,21 @@ func GetIP() string {
 	}
 
 	if ip == nil {
-		log.Fatalf("Failed to find an non-loopback IP Address.")
+		log.Printf("[error] failed to find an non-loopback IP Address. Using PI_HOSTNAME/DEVELOPMENT_HOSTNAME as IP.")
+
+		devhn := os.Getenv("DEVELOPMENT_HOSTNAME")
+		if len(devhn) != 0 {
+			log.Printf("Development machine. Using hostname %s", devhn)
+			return devhn
+		}
+
+		pihn := os.Getenv("PI_HOSTNAME")
+		if len(pihn) == 0 {
+			log.Fatalf("[error] PI_HOSTNAME is not set.")
+		}
+		return pihn
 	}
 
 	log.Printf("My IP address is %s", ip)
-
 	return string(ip)
 }
