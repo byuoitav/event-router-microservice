@@ -30,7 +30,7 @@ func main() {
 	RoutingTable[eventinfrastructure.Metrics] = []string{eventinfrastructure.Translator}
 	RoutingTable[eventinfrastructure.UIFeature] = []string{eventinfrastructure.Room}
 
-	router := eventinfrastructure.NewRouter(RoutingTable, wg, port)
+	router := eventinfrastructure.NewRouter(RoutingTable, wg, port, "localhost:7003")
 
 	server := echo.New()
 	server.Pre(middleware.RemoveTrailingSlash())
@@ -38,7 +38,6 @@ func main() {
 
 	//	server.GET("/health", echo.WrapHandler(http.HandlerFunc(health.Check)))
 	server.POST("/subscribe", router.HandleRequest)
-	log.Printf("Waiting for new subscriptions")
 
 	//	ip := eventinfrastructure.GetIP()
 	pihn := os.Getenv("PI_HOSTNAME")

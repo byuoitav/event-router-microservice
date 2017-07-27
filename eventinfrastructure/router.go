@@ -39,10 +39,10 @@ func NewRouter(routingTable map[string][]string, wg sync.WaitGroup, port string,
 	// subscribe to each of the requested addresses
 	for _, addr := range addrs {
 		r.newSubscriptionChan <- addr
+		r.router.Subscribe(addr, 5, 5)
 	}
 
 	r.address = GetIP() + ":" + port
-	log.Printf("address is %s", r.address)
 
 	return &r
 }
@@ -50,7 +50,7 @@ func NewRouter(routingTable map[string][]string, wg sync.WaitGroup, port string,
 func (r *Router) HandleRequest(context echo.Context) error {
 	var cr ConnectionRequest
 	context.Bind(&cr)
-	log.Printf("Recieved subscription request for %s", cr.PublisherAddr)
+	log.Printf("[router] Recieved subscription request for %s", cr.PublisherAddr)
 
 	err := r.HandleConnectionRequest(cr)
 	if err != nil {
@@ -64,7 +64,7 @@ func (r *Router) HandleConnectionRequest(cr ConnectionRequest) error {
 	if len(cr.PublisherAddr) > 0 {
 		r.newSubscriptionChan <- cr.PublisherAddr
 	} else {
-		log.Printf("Request is missing an address to subscribe to")
+		log.Printf("[error] request is missing an address to subscribe to")
 	}
 
 	// respond to Subscriber Endpoint
@@ -91,7 +91,7 @@ func (r *Router) HandleConnectionRequest(cr ConnectionRequest) error {
 			resp, err = http.Post(cr.SubscriberEndpoint, "application/json", bytes.NewBuffer(body))
 		}
 
-		log.Printf("Successfully posted connection request to %s", cr.SubscriberEndpoint)
+		log.Printf("[router] Successfully posted connection request to %s", cr.SubscriberEndpoint)
 		resp.Body.Close()
 	}
 	return nil
