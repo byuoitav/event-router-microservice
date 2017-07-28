@@ -1,5 +1,11 @@
 package eventinfrastructure
 
+import (
+	"log"
+	"os"
+	"strings"
+)
+
 type Event struct {
 	Hostname         string    `json:"hostname,omitempty"`
 	Timestamp        string    `json:"timestamp,omitempty"`
@@ -77,4 +83,42 @@ func (e EventCause) String() string {
 		return "STARTUP"
 	}
 	return ""
+}
+
+// functions to get data about device, based off of environment variables
+func GetBuildingFromHostname() string {
+	hostname := os.Getenv("PI_HOSTNAME")
+	if len(hostname) < 1 {
+		log.Fatalf("failed to get pi hostname. Is it set?")
+	}
+
+	data := strings.Split(hostname, "-")
+
+	return data[0]
+}
+
+func GetRoomFromHostname() string {
+	hostname := os.Getenv("PI_HOSTNAME")
+	if len(hostname) < 1 {
+		log.Fatalf("failed to get pi hostname. Is it set?")
+	}
+
+	data := strings.Split(hostname, "-")
+
+	return data[1]
+}
+
+func GetDeviceNameFromHostname() string {
+	hostname := os.Getenv("PI_HOSTNAME")
+	if len(hostname) < 1 {
+		log.Fatalf("failed to get pi hostname. Is it set?")
+	}
+
+	data := strings.Split(hostname, "-")
+
+	return data[2]
+}
+
+func GetDevHostname() string {
+	return os.Getenv("DEVELOPMENT_HOSTNAME")
 }
