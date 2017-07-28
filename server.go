@@ -9,6 +9,7 @@ import (
 
 	"github.com/byuoitav/av-api/dbo"
 	"github.com/byuoitav/event-router-microservice/eventinfrastructure"
+	"github.com/fatih/color"
 	"github.com/labstack/echo"
 	"github.com/labstack/echo/middleware"
 )
@@ -16,6 +17,7 @@ import (
 var dev bool
 
 func main() {
+	defer color.Unset()
 	var wg sync.WaitGroup
 
 	wg.Add(3)

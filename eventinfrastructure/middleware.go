@@ -34,6 +34,7 @@ func SendConnectionRequest(url string, req ConnectionRequest, retry bool) error 
 	if err != nil {
 		color.Set(color.FgHiRed)
 		log.Printf("[error] %s", err.Error())
+		return err
 	}
 
 	resp, err := http.Post(url, "application/json", bytes.NewBuffer(body))
