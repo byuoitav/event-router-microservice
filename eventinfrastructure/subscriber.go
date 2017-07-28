@@ -46,16 +46,21 @@ func NewSubscriber(filters []string, requests ...string) *Subscriber {
 	return &s
 }
 
-func (s *Subscriber) HandleSubscriptionRequest(context echo.Context) error {
+func HandleSubscriptionRequest(context echo.Context) error {
 	var cr ConnectionRequest
 	context.Bind(&cr)
 
-	if len(cr.PublisherAddr) > 0 {
-		s.subscriptions <- cr.PublisherAddr
+	s := context.Get(ContextSubscriber)
+	if sub, ok := s.(*Subscriber); ok {
+		if len(cr.PublisherAddr) > 0 {
+			sub.subscriptions <- cr.PublisherAddr
+		} else {
+			return context.JSON(http.StatusBadRequest, "publisher-address can not be empty.")
+		}
+		return context.JSON(http.StatusOK, nil)
 	} else {
-		return context.JSON(http.StatusBadRequest, "publisher-address can not be empty.")
+		return context.JSON(http.StatusInternalServerError, "subscriber not passed into context.")
 	}
-	return context.JSON(http.StatusOK, nil)
 }
 
 func (s *Subscriber) addAddresses() {
