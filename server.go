@@ -62,7 +62,9 @@ func main() {
 				log.Printf("[error] Connecting to the Configuration DB failed, retrying in 5 seconds.")
 				time.Sleep(5 * time.Second)
 			} else {
+				color.Set(color.FgYellow, color.Bold)
 				log.Printf("Connection to the Configuration DB established.")
+				color.Unset()
 
 				addresses := []string{}
 				for _, device := range devices {
@@ -71,6 +73,7 @@ func main() {
 							continue
 						}
 					}
+					log.Printf("adding %s", device.Address)
 					addresses = append(addresses, device.Address+":6999/subscribe")
 				}
 
