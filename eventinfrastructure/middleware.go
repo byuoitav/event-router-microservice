@@ -47,7 +47,6 @@ func SendConnectionRequest(url string, req ConnectionRequest, retry bool) error 
 		return err
 	}
 
-	log.Printf("Posting %s to %s", body, url)
 	resp, err := http.Post(url, "application/json", bytes.NewBuffer(body))
 	for err != nil || resp.StatusCode != 200 {
 		color.Set(color.FgHiRed)
@@ -115,7 +114,7 @@ func GetIP() string {
 		return pihn
 	}
 
-	color.Set(color.FgHiGreen)
+	color.Set(color.FgHiGreen, color.Bold)
 	log.Printf("My IP address is %v", ip.String())
 	return ip.String()
 }
