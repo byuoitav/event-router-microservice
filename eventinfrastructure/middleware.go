@@ -48,7 +48,8 @@ func SendConnectionRequest(url string, req ConnectionRequest, retry bool) error 
 	}
 
 	resp, err := http.Post(url, "application/json", bytes.NewBuffer(body))
-	for err != nil || resp.StatusCode != 200 {
+	count := 0
+	for (err != nil || resp.StatusCode != 200) && count < 12 {
 		color.Set(color.FgHiRed)
 		if resp != nil {
 			body, _ := ioutil.ReadAll(resp.Body)
@@ -64,6 +65,7 @@ func SendConnectionRequest(url string, req ConnectionRequest, retry bool) error 
 		log.Printf("Trying again in 5 seconds.")
 		time.Sleep(5 * time.Second)
 		resp, err = http.Post(url, "application/json", bytes.NewBuffer(body))
+		count++
 	}
 
 	if err == nil {
@@ -115,6 +117,6 @@ func GetIP() string {
 	}
 
 	color.Set(color.FgHiGreen)
-	log.Printf("My IP address is %s", ip)
-	return string(ip)
+	log.Printf("My IP address is %v", ip.String())
+	return ip.String()
 }

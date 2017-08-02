@@ -1,7 +1,10 @@
 package main
 
 import (
+	"fmt"
 	"log"
+	"net"
+	"net/http"
 	"os"
 	"strings"
 	"sync"
@@ -10,6 +13,7 @@ import (
 	"github.com/byuoitav/av-api/dbo"
 	"github.com/byuoitav/event-router-microservice/eventinfrastructure"
 	"github.com/fatih/color"
+	"github.com/jessemillar/health"
 	"github.com/labstack/echo"
 	"github.com/labstack/echo/middleware"
 )
@@ -45,7 +49,7 @@ func main() {
 	server.Pre(middleware.RemoveTrailingSlash())
 	server.Use(middleware.CORS())
 
-	//	server.GET("/health", echo.WrapHandler(http.HandlerFunc(health.Check)))
+	server.GET("/health", echo.WrapHandler(http.HandlerFunc(health.Check)))
 	server.POST("/subscribe", router.HandleRequest)
 
 	ip := eventinfrastructure.GetIP()
@@ -62,7 +66,9 @@ func main() {
 				log.Printf("[error] Connecting to the Configuration DB failed, retrying in 5 seconds.")
 				time.Sleep(5 * time.Second)
 			} else {
+				color.Set(color.FgYellow, color.Bold)
 				log.Printf("Connection to the Configuration DB established.")
+				color.Unset()
 
 				addresses := []string{}
 				for _, device := range devices {
@@ -75,14 +81,19 @@ func main() {
 				}
 
 				var cr eventinfrastructure.ConnectionRequest
-				cr.PublisherAddr = ip + ".byu.edu:7000"
-				cr.SubscriberEndpoint = ip + ".byu.edu:6999/subscribe"
+				cr.PublisherAddr = ip + ":7000"
+				cr.SubscriberEndpoint = fmt.Sprintf("http://%s:6999/subscribe", ip)
 
 				for _, address := range addresses {
-					err = eventinfrastructure.SendConnectionRequest("http://"+address, cr, false)
+					split := strings.Split(address, ":")
+					host, err := net.LookupHost(split[0])
 					if err != nil {
-						log.Printf("[error] %s", err)
+						log.Printf("error %s", err.Error())
 					}
+					color.Set(color.FgYellow, color.Bold)
+					log.Printf("Creating connection with %s (%s)", address, host)
+					color.Unset()
+					go eventinfrastructure.SendConnectionRequest("http://"+address, cr, false)
 				}
 				return
 			}

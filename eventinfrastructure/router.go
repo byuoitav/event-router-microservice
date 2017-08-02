@@ -44,8 +44,7 @@ func NewRouter(routingTable map[string][]string, wg sync.WaitGroup, port string,
 		r.newSubscriptionChan <- addr
 	}
 
-	//	r.address = GetIP() + ":" + port
-	r.address = "localhost:" + port
+	r.address = GetIP() + ":" + port
 
 	return &r
 }
@@ -74,6 +73,7 @@ func (r *Router) HandleConnectionRequest(cr ConnectionRequest) error {
 	} else {
 		color.Set(color.FgHiRed)
 		log.Printf("[error] request is missing an address to subscribe to")
+		color.Unset()
 		return errors.New("request is missing an address to subscribe to")
 	}
 
@@ -98,8 +98,8 @@ func (r *Router) addSubscriptions() {
 			}
 			color.Set(color.FgCyan)
 			log.Printf("[router] Adding subscription to %s", request)
-			r.router.Subscribe(request, 10, 3)
 			color.Unset()
+			r.router.Subscribe(request, 10, 3)
 		}
 	}
 }
