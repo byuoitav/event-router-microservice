@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"log"
 	"os"
 	"strings"
@@ -78,8 +79,8 @@ func main() {
 				}
 
 				var cr eventinfrastructure.ConnectionRequest
-				cr.PublisherAddr = ip + ".byu.edu:7000"
-				cr.SubscriberEndpoint = ip + ".byu.edu:6999/subscribe"
+				cr.PublisherAddr = ip + ":7000"
+				cr.SubscriberEndpoint = fmt.Sprintf("http://%s:6999/subscribe", ip)
 
 				for _, address := range addresses {
 					err = eventinfrastructure.SendConnectionRequest("http://"+address, cr, false)
