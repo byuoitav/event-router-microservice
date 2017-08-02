@@ -44,14 +44,14 @@ func NewRouter(routingTable map[string][]string, wg sync.WaitGroup, port string,
 		r.newSubscriptionChan <- addr
 	}
 
-	//	r.address = GetIP() + ":" + port
-	r.address = "localhost:" + port
+	r.address = GetIP() + ":" + port
 
 	return &r
 }
 
 func (r *Router) HandleRequest(context echo.Context) error {
 	color.Set(color.FgCyan)
+	log.Printf("HANDLE REQUEST")
 	defer color.Unset()
 
 	var cr ConnectionRequest
@@ -67,11 +67,17 @@ func (r *Router) HandleRequest(context echo.Context) error {
 
 func (r *Router) HandleConnectionRequest(cr ConnectionRequest) error {
 	color.Set(color.FgGreen)
+	log.Printf("HANDLECONNECITONREQUESTJ")
+	log.Printf("cr %s", cr)
 	defer color.Unset()
 
 	if len(cr.PublisherAddr) > 0 {
+		log.Printf("here2")
+		color.Set(color.FgMagenta, color.Bold)
+		log.Printf("Recieved message from %s", cr.PublisherAddr)
 		r.newSubscriptionChan <- cr.PublisherAddr
 	} else {
+		log.Printf("here1")
 		color.Set(color.FgHiRed)
 		log.Printf("[error] request is missing an address to subscribe to")
 		return errors.New("request is missing an address to subscribe to")
@@ -81,6 +87,9 @@ func (r *Router) HandleConnectionRequest(cr ConnectionRequest) error {
 	if len(cr.SubscriberEndpoint) > 0 && len(r.address) > 0 {
 		var response ConnectionRequest
 		response.PublisherAddr = r.address
+		color.Set(color.FgCyan, color.Bold)
+		log.Printf("posting %s to %s", r.address, cr.SubscriberEndpoint)
+		color.Unset()
 
 		SendConnectionRequest(cr.SubscriberEndpoint, response, true)
 	}

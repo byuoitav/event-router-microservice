@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"log"
 	"net"
+	"net/http"
 	"os"
 	"strings"
 	"sync"
@@ -12,6 +13,7 @@ import (
 	"github.com/byuoitav/av-api/dbo"
 	"github.com/byuoitav/event-router-microservice/eventinfrastructure"
 	"github.com/fatih/color"
+	"github.com/jessemillar/health"
 	"github.com/labstack/echo"
 	"github.com/labstack/echo/middleware"
 )
@@ -47,7 +49,7 @@ func main() {
 	server.Pre(middleware.RemoveTrailingSlash())
 	server.Use(middleware.CORS())
 
-	//	server.GET("/health", echo.WrapHandler(http.HandlerFunc(health.Check)))
+	server.GET("/health", echo.WrapHandler(http.HandlerFunc(health.Check)))
 	server.POST("/subscribe", router.HandleRequest)
 
 	ip := eventinfrastructure.GetIP()
@@ -98,6 +100,7 @@ func main() {
 		}
 	}()
 
+	log.Printf("here")
 	server.Start(":6999")
 	wg.Wait()
 }
