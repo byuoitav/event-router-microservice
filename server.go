@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"log"
+	"net"
 	"os"
 	"strings"
 	"sync"
@@ -74,7 +75,6 @@ func main() {
 							continue
 						}
 					}
-					log.Printf("adding %s", device.Address)
 					addresses = append(addresses, device.Address+":6999/subscribe")
 				}
 
@@ -83,10 +83,15 @@ func main() {
 				cr.SubscriberEndpoint = fmt.Sprintf("http://%s:6999/subscribe", ip)
 
 				for _, address := range addresses {
-					err = eventinfrastructure.SendConnectionRequest("http://"+address, cr, false)
+					split := strings.Split(address, ":")
+					host, err := net.LookupHost(split[0])
 					if err != nil {
-						log.Printf("[error] %s", err)
+						log.Printf("error %s", err.Error())
 					}
+					color.Set(color.FgYellow, color.Bold)
+					log.Printf("Creating connection with %s (%s)", address, host)
+					color.Unset()
+					go eventinfrastructure.SendConnectionRequest("http://"+address, cr, false)
 				}
 				return
 			}

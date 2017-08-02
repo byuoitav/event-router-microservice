@@ -47,7 +47,6 @@ func SendConnectionRequest(url string, req ConnectionRequest, retry bool) error 
 		return err
 	}
 
-	log.Printf("Posting %s to %s", body, url)
 	resp, err := http.Post(url, "application/json", bytes.NewBuffer(body))
 	count := 0
 	for (err != nil || resp.StatusCode != 200) && count < 12 {
