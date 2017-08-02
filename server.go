@@ -100,7 +100,6 @@ func main() {
 		}
 	}()
 
-	log.Printf("here")
 	server.Start(":6999")
 	wg.Wait()
 }
