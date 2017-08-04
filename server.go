@@ -1,8 +1,7 @@
 package main
 
 import (
-	"bytes"
-	"encoding/json"
+	"fmt"
 	"log"
 	"net"
 	"net/http"
@@ -13,18 +12,17 @@ import (
 
 	"github.com/byuoitav/av-api/dbo"
 	"github.com/byuoitav/event-router-microservice/eventinfrastructure"
-	"github.com/byuoitav/event-router-microservice/handlers"
-	"github.com/byuoitav/event-router-microservice/subscription"
+	"github.com/fatih/color"
+	"github.com/jessemillar/health"
 	"github.com/labstack/echo"
 	"github.com/labstack/echo/middleware"
-	"github.com/xuther/go-message-router/router"
 )
 
 var dev bool
 
 func main() {
+	defer color.Unset()
 	var wg sync.WaitGroup
-	var err error
 
 	wg.Add(3)
 	port := "7000"
@@ -41,37 +39,26 @@ func main() {
 	RoutingTable[eventinfrastructure.Metrics] = []string{eventinfrastructure.Translator}
 	RoutingTable[eventinfrastructure.UIFeature] = []string{eventinfrastructure.Room}
 
-	subscription.R = router.Router{}
-
-	err = subscription.R.Start(RoutingTable, wg, 1000, []string{}, 120, time.Second*3, port)
-	if err != nil {
-		log.Fatal(err)
-	}
+	// create the router
+	// and pass in all of the publishers it should subscribe to - just in case the router goes down.
+	// find a way to not hard code this?
+	// av-api, touchpanel-ui, event-translator
+	router := eventinfrastructure.NewRouter(RoutingTable, wg, port, "localhost:7001", "localhost:7003", "localhost:7002")
 
 	server := echo.New()
 	server.Pre(middleware.RemoveTrailingSlash())
 	server.Use(middleware.CORS())
 
-	//	server.GET("/health", echo.WrapHandler(http.HandlerFunc(health.Check)))
-	server.POST("/subscribe", handlers.Subscribe)
+	server.GET("/health", echo.WrapHandler(http.HandlerFunc(health.Check)))
+	server.POST("/subscribe", router.HandleRequest)
 
-	log.Printf("Waiting for new subscriptions")
-
-	// get all the devices with the eventrouter role
-	subscription.Hostname = os.Getenv("PI_HOSTNAME")
-	if len(subscription.Hostname) == 0 {
-		log.Fatalf("[error] PI_HOSTNAME is not set.")
+	ip := eventinfrastructure.GetIP()
+	pihn := os.Getenv("PI_HOSTNAME")
+	if len(pihn) == 0 {
+		log.Fatalf("PI_HOSTNAME is not set.")
 	}
-	log.Printf("PI_HOSTNAME = %s", subscription.Hostname)
-	values := strings.Split(strings.TrimSpace(subscription.Hostname), "-")
+	values := strings.Split(strings.TrimSpace(pihn), "-")
 
-	devhn := os.Getenv("DEVELOPMENT_HOSTNAME")
-	dev = false
-	if len(devhn) != 0 {
-		dev = true
-		log.Printf("Development machine. Using hostname %s", devhn)
-		subscription.Hostname = devhn
-	}
 	go func() {
 		for {
 			devices, err := dbo.GetDevicesByBuildingAndRoomAndRole(values[0], values[1], "EventRouter")
@@ -79,40 +66,34 @@ func main() {
 				log.Printf("[error] Connecting to the Configuration DB failed, retrying in 5 seconds.")
 				time.Sleep(5 * time.Second)
 			} else {
+				color.Set(color.FgYellow, color.Bold)
 				log.Printf("Connection to the Configuration DB established.")
+				color.Unset()
 
 				addresses := []string{}
 				for _, device := range devices {
 					if !dev {
-						if strings.EqualFold(device.GetFullName(), subscription.Hostname) {
+						if strings.EqualFold(device.GetFullName(), pihn) {
 							continue
 						}
 					}
 					addresses = append(addresses, device.Address+":6999/subscribe")
 				}
 
-				var s subscription.SubscribeRequest
-				s.Address = subscription.Hostname + ".byu.edu:7000"
-				s.PubAddress = subscription.Hostname + ".byu.edu:6999/subscribe"
-				body, err := json.Marshal(s)
-				if err != nil {
-					log.Printf("[error] Failed to unmarshal subscription body: %s", err.Error())
-				}
+				var cr eventinfrastructure.ConnectionRequest
+				cr.PublisherAddr = ip + ":7000"
+				cr.SubscriberEndpoint = fmt.Sprintf("http://%s:6999/subscribe", ip)
 
 				for _, address := range addresses {
-					log.Printf("Posting to %s", address)
-					resp, err := http.Post("http://"+address, "application/json", bytes.NewBuffer(body))
+					split := strings.Split(address, ":")
+					host, err := net.LookupHost(split[0])
 					if err != nil {
-						log.Printf("[error] Failed to post: %s", err.Error())
+						log.Printf("error %s", err.Error())
 					}
-					if resp != nil {
-						defer resp.Body.Close()
-						if resp.StatusCode == 200 {
-							log.Printf("Post to %s successful", address)
-						} else {
-							log.Printf("[error] post to %s unsuccessful. Response:\n %s", address, resp)
-						}
-					}
+					color.Set(color.FgYellow, color.Bold)
+					log.Printf("Creating connection with %s (%s)", address, host)
+					color.Unset()
+					go eventinfrastructure.SendConnectionRequest("http://"+address, cr, false)
 				}
 				return
 			}
@@ -121,17 +102,4 @@ func main() {
 
 	server.Start(":6999")
 	wg.Wait()
-}
-
-func GetOutboundIP() string {
-	conn, err := net.Dial("udp", "8.8.8.8:80")
-	if err != nil {
-		log.Fatal(err)
-	}
-	defer conn.Close()
-
-	localAddr := conn.LocalAddr().String()
-	idx := strings.LastIndex(localAddr, ":")
-
-	return localAddr[0:idx]
 }
