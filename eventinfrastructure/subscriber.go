@@ -1,11 +1,10 @@
 package eventinfrastructure
 
 import (
+	"errors"
 	"log"
-	"net/http"
 
 	"github.com/fatih/color"
-	"github.com/labstack/echo"
 	"github.com/xuther/go-message-router/common"
 	"github.com/xuther/go-message-router/subscriber"
 )
@@ -46,21 +45,14 @@ func NewSubscriber(filters []string, requests ...string) *Subscriber {
 	return &s
 }
 
-func HandleSubscriptionRequest(context echo.Context) error {
-	var cr ConnectionRequest
-	context.Bind(&cr)
-
-	s := context.Get(ContextSubscriber)
-	if sub, ok := s.(*Subscriber); ok {
-		if len(cr.PublisherAddr) > 0 {
-			sub.subscriptions <- cr.PublisherAddr
-		} else {
-			return context.JSON(http.StatusBadRequest, "publisher-address can not be empty.")
-		}
-		return context.JSON(http.StatusOK, nil)
+func HandleSubscriptionRequest(cr ConnectionRequest, sub *Subscriber) error {
+	if len(cr.PublisherAddr) > 0 {
+		sub.subscriptions <- cr.PublisherAddr
 	} else {
-		return context.JSON(http.StatusInternalServerError, "subscriber not passed into context.")
+		return errors.New("publisher-address can not be empty.")
 	}
+
+	return nil
 }
 
 func (s *Subscriber) addAddresses() {
