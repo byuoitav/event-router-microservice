@@ -43,7 +43,7 @@ func main() {
 	// and pass in all of the publishers it should subscribe to - just in case the router goes down.
 	// find a way to not hard code this?
 	// av-api, touchpanel-ui, event-translator
-	router := eventinfrastructure.NewRouter(RoutingTable, wg, port, "localhost:7001", "localhost:7003", "localhost:7002")
+	router := eventinfrastructure.NewRouter(RoutingTable, wg, port, "localhost:7001", "localhost:7003", "localhost:7002", "localhost:7004")
 
 	server := echo.New()
 	server.Pre(middleware.RemoveTrailingSlash())
