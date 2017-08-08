@@ -51,7 +51,7 @@ func main() {
 	server.Use(middleware.CORS())
 
 	server.GET("/health", echo.WrapHandler(http.HandlerFunc(health.Check)))
-	server.GET("/status", GetStatus, BindRouter(router))
+	server.GET("/status", GetStatus)
 	server.POST("/subscribe", router.HandleRequest)
 
 	ip := eventinfrastructure.GetIP()
@@ -106,18 +106,13 @@ func main() {
 	wg.Wait()
 }
 
-func BindRouter(r *eventinfrastructure.Router) echo.MiddlewareFunc {
-	return func(h echo.HandlerFunc) echo.HandlerFunc {
-		return func(c echo.Context) error {
-			c.Set(eventinfrastructure.ContextRouter, r)
-			return h(c)
-		}
-	}
-}
-
 func GetStatus(context echo.Context) error {
 	var s microservicestatus.Status
-	s.Version = "0.0"
+	var err error
+	s.Version, err = microservicestatus.GetVersion("version.txt")
+	if err != nil {
+		return context.JSON(http.StatusOK, "Failed to open version.txt")
+	}
 
 	s.Status = microservicestatus.StatusOK
 	s.StatusInfo = ""
