@@ -19,6 +19,7 @@ import (
 
 const ContextPublisher = "publisher"
 const ContextSubscriber = "subscriber"
+const ContextRouter = "router"
 
 func BindPublisher(p *Publisher) echo.MiddlewareFunc {
 	return func(next echo.HandlerFunc) echo.HandlerFunc {

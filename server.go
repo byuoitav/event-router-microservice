@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/byuoitav/av-api/dbo"
+	"github.com/byuoitav/device-monitoring-microservice/microservicestatus"
 	"github.com/byuoitav/event-router-microservice/eventinfrastructure"
 	"github.com/fatih/color"
 	"github.com/jessemillar/health"
@@ -50,6 +51,7 @@ func main() {
 	server.Use(middleware.CORS())
 
 	server.GET("/health", echo.WrapHandler(http.HandlerFunc(health.Check)))
+	server.GET("/status", GetStatus, BindRouter(router))
 	server.POST("/subscribe", router.HandleRequest)
 
 	ip := eventinfrastructure.GetIP()
@@ -102,4 +104,33 @@ func main() {
 
 	server.Start(":6999")
 	wg.Wait()
+}
+
+func BindRouter(r *eventinfrastructure.Router) echo.MiddlewareFunc {
+	return func(h echo.HandlerFunc) echo.HandlerFunc {
+		return func(c echo.Context) error {
+			c.Set(eventinfrastructure.ContextRouter, r)
+			return h(c)
+		}
+	}
+}
+
+func GetStatus(context echo.Context) error {
+	var s microservicestatus.Status
+	s.Version = "0.0"
+
+	r := context.Get(eventinfrastructure.ContextRouter)
+	if router, ok := r.(*eventinfrastructure.Router); ok {
+		if router.UpStatus() {
+			s.Status = microservicestatus.StatusOK
+			s.StatusInfo = ""
+		} else {
+			s.Status = microservicestatus.StatusSick
+			s.StatusInfo = "Router is down."
+		}
+	} else {
+		return context.JSON(http.StatusOK, "Middleware failed to set router")
+	}
+
+	return context.JSON(http.StatusOK, s)
 }

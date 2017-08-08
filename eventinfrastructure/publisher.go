@@ -13,6 +13,7 @@ type Publisher struct {
 	publisher publisher.Publisher
 	writeChan chan common.Message
 	Port      string
+	up        bool
 }
 
 // users of this publisher struct can write messages into the write channel, and they will be published
@@ -23,6 +24,7 @@ func NewPublisher(port string) *Publisher {
 	var p Publisher
 	var err error
 
+	p.up = false
 	p.Port = port
 	p.publisher, err = publisher.NewPublisher(p.Port, 1001, 10)
 	if err != nil {
@@ -38,6 +40,7 @@ func NewPublisher(port string) *Publisher {
 
 	// write things that come on the channel
 	go func() {
+		p.up = true
 		for {
 			select {
 			case message, ok := <-p.writeChan:
@@ -77,4 +80,8 @@ func (p *Publisher) PublishEvent(e Event, eventType string) error {
 
 func (p *Publisher) PublishCommonMessage(m common.Message) {
 	p.writeChan <- m
+}
+
+func (p *Publisher) UpStatus() bool {
+	return p.up
 }
