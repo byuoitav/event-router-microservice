@@ -16,7 +16,6 @@ type Router struct {
 	router              router.Router
 	newSubscriptionChan chan string
 	address             string
-	up                  bool
 }
 
 type ConnectionRequest struct {
@@ -29,7 +28,6 @@ func NewRouter(routingTable map[string][]string, wg sync.WaitGroup, port string,
 	defer color.Unset()
 
 	var r Router
-	r.up = false
 
 	r.router = router.Router{}
 	err := r.router.Start(routingTable, wg, 1000, []string{}, 120, time.Second*3, port)
@@ -48,7 +46,6 @@ func NewRouter(routingTable map[string][]string, wg sync.WaitGroup, port string,
 
 	r.address = GetIP() + ":" + port
 
-	r.up = true
 	return &r
 }
 
@@ -97,7 +94,6 @@ func (r *Router) addSubscriptions() {
 			if !ok {
 				color.Set(color.FgHiRed)
 				log.Printf("[error] New subscription channel closed")
-				r.up = false
 				color.Unset()
 			}
 			color.Set(color.FgCyan)
@@ -106,8 +102,4 @@ func (r *Router) addSubscriptions() {
 			r.router.Subscribe(request, 10, 3)
 		}
 	}
-}
-
-func (r *Router) UpStatus() bool {
-	return r.up
 }

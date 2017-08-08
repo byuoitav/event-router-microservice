@@ -14,7 +14,6 @@ type Subscriber struct {
 	filters       []string
 	subscriptions chan string
 	MessageChan   chan common.Message
-	up            bool
 }
 
 func NewSubscriber(filters []string, requests ...string) *Subscriber {
@@ -24,7 +23,6 @@ func NewSubscriber(filters []string, requests ...string) *Subscriber {
 	var s Subscriber
 	var err error
 
-	s.up = false
 	s.subscriber, err = subscriber.NewSubscriber(20)
 	if err != nil {
 		color.Set(color.FgHiRed)
@@ -65,7 +63,6 @@ func (s *Subscriber) addAddresses() {
 			if !ok {
 				color.Set(color.FgHiRed)
 				log.Printf("[error] subscriber address channel closed")
-				s.up = false
 				color.Unset()
 			}
 			log.Printf("[subscriber] Subscribing to %s", addr)
@@ -76,7 +73,6 @@ func (s *Subscriber) addAddresses() {
 }
 
 func (s *Subscriber) read() {
-	s.up = true
 	for {
 		message := s.subscriber.Read()
 
@@ -86,8 +82,4 @@ func (s *Subscriber) read() {
 
 		s.MessageChan <- message
 	}
-}
-
-func (s *Subscriber) UpStatus() bool {
-	return s.up
 }

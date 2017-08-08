@@ -119,18 +119,8 @@ func GetStatus(context echo.Context) error {
 	var s microservicestatus.Status
 	s.Version = "0.0"
 
-	r := context.Get(eventinfrastructure.ContextRouter)
-	if router, ok := r.(*eventinfrastructure.Router); ok {
-		if router.UpStatus() {
-			s.Status = microservicestatus.StatusOK
-			s.StatusInfo = ""
-		} else {
-			s.Status = microservicestatus.StatusSick
-			s.StatusInfo = "Router is down."
-		}
-	} else {
-		return context.JSON(http.StatusOK, "Middleware failed to set router")
-	}
+	s.Status = microservicestatus.StatusOK
+	s.StatusInfo = ""
 
 	return context.JSON(http.StatusOK, s)
 }
