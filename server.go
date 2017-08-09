@@ -51,7 +51,7 @@ func main() {
 	server.Use(middleware.CORS())
 
 	server.GET("/health", echo.WrapHandler(http.HandlerFunc(health.Check)))
-	server.GET("/status", GetStatus)
+	server.GET("/mstatus", GetStatus)
 	server.POST("/subscribe", router.HandleRequest)
 
 	ip := eventinfrastructure.GetIP()
