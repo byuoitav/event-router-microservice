@@ -111,11 +111,13 @@ func GetStatus(context echo.Context) error {
 	var err error
 	s.Version, err = microservicestatus.GetVersion("version.txt")
 	if err != nil {
-		return context.JSON(http.StatusOK, "Failed to open version.txt")
+		s.Version = "missing"
+		s.Status = microservicestatus.StatusSick
+		s.StatusInfo = fmt.Sprintf("Error: %s", err.Error())
+	} else {
+		s.Status = microservicestatus.StatusOK
+		s.StatusInfo = ""
 	}
-
-	s.Status = microservicestatus.StatusOK
-	s.StatusInfo = ""
 
 	return context.JSON(http.StatusOK, s)
 }
