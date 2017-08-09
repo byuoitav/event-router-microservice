@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/byuoitav/av-api/dbo"
+	"github.com/byuoitav/device-monitoring-microservice/microservicestatus"
 	"github.com/byuoitav/event-router-microservice/eventinfrastructure"
 	"github.com/fatih/color"
 	"github.com/jessemillar/health"
@@ -43,13 +44,14 @@ func main() {
 	// and pass in all of the publishers it should subscribe to - just in case the router goes down.
 	// find a way to not hard code this?
 	// av-api, touchpanel-ui, event-translator
-	router := eventinfrastructure.NewRouter(RoutingTable, wg, port, "localhost:7001", "localhost:7003", "localhost:7002")
+	router := eventinfrastructure.NewRouter(RoutingTable, wg, port, "localhost:7001", "localhost:7003", "localhost:7002", "localhost:7004")
 
 	server := echo.New()
 	server.Pre(middleware.RemoveTrailingSlash())
 	server.Use(middleware.CORS())
 
 	server.GET("/health", echo.WrapHandler(http.HandlerFunc(health.Check)))
+	server.GET("/mstatus", GetStatus)
 	server.POST("/subscribe", router.HandleRequest)
 
 	ip := eventinfrastructure.GetIP()
@@ -102,4 +104,20 @@ func main() {
 
 	server.Start(":6999")
 	wg.Wait()
+}
+
+func GetStatus(context echo.Context) error {
+	var s microservicestatus.Status
+	var err error
+	s.Version, err = microservicestatus.GetVersion("version.txt")
+	if err != nil {
+		s.Version = "missing"
+		s.Status = microservicestatus.StatusSick
+		s.StatusInfo = fmt.Sprintf("Error: %s", err.Error())
+	} else {
+		s.Status = microservicestatus.StatusOK
+		s.StatusInfo = ""
+	}
+
+	return context.JSON(http.StatusOK, s)
 }
