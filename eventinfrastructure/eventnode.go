@@ -7,7 +7,7 @@ import (
 	"log"
 	"strings"
 
-	"github.com/byuoitav/device-monitoring-microservice/healthinfrastructure"
+	"github.com/byuoitav/device-monitoring-microservice/statusinfrastructure"
 	"github.com/fatih/color"
 	"github.com/xuther/go-message-router/common"
 	"github.com/xuther/go-message-router/publisher"
@@ -124,6 +124,7 @@ func (n *EventNode) PublishJSONMessageByEventType(eventType string, i interface{
 	}
 
 	n.Write <- common.Message{MessageHeader: header, MessageBody: body}
+	return nil
 }
 
 func (n *EventNode) PublishMessage(m common.Message) {
@@ -175,7 +176,7 @@ func (n *EventNode) read() {
 
 		header := string(bytes.Trim(message.MessageHeader[:], "\x00"))
 		if strings.EqualFold(header, TestPleaseReply) {
-			var s healthinfrastructure.EventNodeStatus
+			var s statusinfrastructure.EventNodeStatus
 			s.Name = n.Name
 
 			n.PublishJSONMessageByEventType(TestReply, s)
