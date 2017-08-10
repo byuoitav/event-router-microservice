@@ -16,9 +16,8 @@ import (
 	"github.com/fatih/color"
 )
 
-const ContextPublisher = "publisher"
-const ContextSubscriber = "subscriber"
 const ContextRouter = "router"
+const ContextEventNode = "eventnode"
 
 func SendConnectionRequest(url string, req ConnectionRequest, retry bool) error {
 	defer color.Unset()
