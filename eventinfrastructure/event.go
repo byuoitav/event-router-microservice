@@ -53,7 +53,6 @@ func (e EventType) String() string {
 		return "HEARTBEAT"
 	case HEALTH:
 		return "HEALTH"
-
 	}
 	return ""
 }

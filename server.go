@@ -11,7 +11,7 @@ import (
 	"time"
 
 	"github.com/byuoitav/av-api/dbo"
-	"github.com/byuoitav/device-monitoring-microservice/microservicestatus"
+	"github.com/byuoitav/device-monitoring-microservice/statusinfrastructure"
 	"github.com/byuoitav/event-router-microservice/eventinfrastructure"
 	"github.com/fatih/color"
 	"github.com/jessemillar/health"
@@ -39,6 +39,12 @@ func main() {
 	RoutingTable[eventinfrastructure.APIError] = []string{eventinfrastructure.UI, eventinfrastructure.Translator}
 	RoutingTable[eventinfrastructure.Metrics] = []string{eventinfrastructure.Translator}
 	RoutingTable[eventinfrastructure.UIFeature] = []string{eventinfrastructure.Room}
+
+	// Test event routing
+	RoutingTable[eventinfrastructure.TestStart] = []string{eventinfrastructure.TestPleaseReply}
+	RoutingTable[eventinfrastructure.TestPleaseReply] = []string{eventinfrastructure.TestExternal}
+	RoutingTable[eventinfrastructure.TestExternalReply] = []string{eventinfrastructure.TestReply}
+	RoutingTable[eventinfrastructure.TestReply] = []string{eventinfrastructure.TestEnd}
 
 	SubscribeTable := make(map[string]string)
 	SubscribeTable["localhost:7001"] = ""
@@ -131,15 +137,15 @@ func DoSubscriptionTable(router *eventinfrastructure.Router, table map[string]st
 }
 
 func GetStatus(context echo.Context) error {
-	var s microservicestatus.Status
+	var s statusinfrastructure.Status
 	var err error
-	s.Version, err = microservicestatus.GetVersion("version.txt")
+	s.Version, err = statusinfrastructure.GetVersion("version.txt")
 	if err != nil {
 		s.Version = "missing"
-		s.Status = microservicestatus.StatusSick
+		s.Status = statusinfrastructure.StatusSick
 		s.StatusInfo = fmt.Sprintf("Error: %s", err.Error())
 	} else {
-		s.Status = microservicestatus.StatusOK
+		s.Status = statusinfrastructure.StatusOK
 		s.StatusInfo = ""
 	}
 
