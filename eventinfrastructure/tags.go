@@ -31,4 +31,12 @@ const Metrics = "metrics"
 
 const UIFeature = "uifeature"
 
-const Test = "test"
+// for measuring status of event routing
+const (
+	TestStart         = "teststart"
+	TestPleaseReply   = "testreply"
+	TestExternal      = "testexternal"
+	TestExternalReply = "testexternalreply"
+	TestReply         = "testreply"
+	TestEnd           = "testend"
+)
