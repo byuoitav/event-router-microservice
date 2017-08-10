@@ -14,7 +14,7 @@ import (
 
 type Router struct {
 	router              router.Router
-	newSubscriptionChan chan string
+	NewSubscriptionChan chan string
 	address             string
 }
 
@@ -36,12 +36,12 @@ func NewRouter(routingTable map[string][]string, wg sync.WaitGroup, port string,
 		log.Fatalf(err.Error())
 	}
 
-	r.newSubscriptionChan = make(chan string, 5)
+	r.NewSubscriptionChan = make(chan string, 5)
 	go r.addSubscriptions()
 
 	// subscribe to each of the requested addresses
 	for _, addr := range addrs {
-		r.newSubscriptionChan <- addr
+		r.NewSubscriptionChan <- addr
 	}
 
 	r.address = GetIP() + ":" + port
@@ -69,7 +69,7 @@ func (r *Router) HandleConnectionRequest(cr ConnectionRequest) error {
 	defer color.Unset()
 
 	if len(cr.PublisherAddr) > 0 {
-		r.newSubscriptionChan <- cr.PublisherAddr
+		r.NewSubscriptionChan <- cr.PublisherAddr
 	} else {
 		color.Set(color.FgHiRed)
 		log.Printf("[error] request is missing an address to subscribe to")
@@ -90,7 +90,7 @@ func (r *Router) HandleConnectionRequest(cr ConnectionRequest) error {
 func (r *Router) addSubscriptions() {
 	for {
 		select {
-		case request, ok := <-r.newSubscriptionChan:
+		case request, ok := <-r.NewSubscriptionChan:
 			if !ok {
 				color.Set(color.FgHiRed)
 				log.Printf("[error] New subscription channel closed")
