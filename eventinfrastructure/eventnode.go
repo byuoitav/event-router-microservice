@@ -31,7 +31,7 @@ type EventNode struct {
 // port: a unique port to publish events on
 // addrs: addresses of subscriber to subscribe to
 // name: name of event node
-func NewEventNode(filters []string, port string, name string, addrs ...string) *EventNode {
+func NewEventNode(filters []string, port, name string, addrs ...string) *EventNode {
 	color.Set(color.FgBlue)
 	defer color.Unset()
 	var n EventNode
