@@ -71,10 +71,22 @@ func (s *Subscriber) GetPublisher() *Publisher {
 
 func HandleSubscriptionRequest(cr ConnectionRequest, sub *Subscriber) error {
 	if len(cr.PublisherAddr) > 0 {
+		color.Set(color.FgYellow, color.Bold)
+		log.Printf("Subscribing to %s", cr.PublisherAddr)
+		color.Unset()
+
 		sub.subscriptions <- cr.PublisherAddr
 	} else {
 		return errors.New("publisher-address can not be empty.")
 	}
+
+	/*
+		if len(cr.SubscriberEndpoint) > 0 {
+			color.Set(color.FgYellow)
+			log.Printf("Responding to %s's subscription request @ %s", cr.PublisherAddr, cr.SubscriberEndpoint)
+			color.Unset()
+		}
+	*/
 
 	return nil
 }
