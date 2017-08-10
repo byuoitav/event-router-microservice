@@ -6,6 +6,7 @@ import (
 
 	"github.com/fatih/color"
 	"github.com/xuther/go-message-router/common"
+	"github.com/xuther/go-message-router/publisher"
 	"github.com/xuther/go-message-router/subscriber"
 )
 
@@ -14,9 +15,20 @@ type Subscriber struct {
 	filters       []string
 	subscriptions chan string
 	MessageChan   chan common.Message
+
+	/*
+		if a "test" event is recieved, then
+		an appropriate response will be sent to the router
+		through this publisher.
+
+		if it is null, then a webhook (pointing to
+		the device-monitoring-microserivce) will be hit
+		with the same information.
+	*/
+	pub *publisher.Publisher
 }
 
-func NewSubscriber(filters []string, requests ...string) *Subscriber {
+func NewSubscriber(filters []string, pub *publisher.Publisher, requests ...string) *Subscriber {
 	color.Set(color.FgBlue)
 	defer color.Unset()
 
@@ -30,6 +42,7 @@ func NewSubscriber(filters []string, requests ...string) *Subscriber {
 	}
 
 	s.filters = filters
+	s.pub = pub
 	s.subscriptions = make(chan string, 10)
 	go s.addAddresses()
 
@@ -75,6 +88,12 @@ func (s *Subscriber) addAddresses() {
 func (s *Subscriber) read() {
 	for {
 		message := s.subscriber.Read()
+
+		header := string(message.MessageHeader[:])
+		log.Printf("message header %s", header)
+		if header == eventType.TEST {
+
+		}
 
 		color.Set(color.FgBlue)
 		log.Printf("[subscriber] Recieved message: %s", message)

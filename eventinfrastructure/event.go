@@ -35,6 +35,7 @@ const (
 	INFO
 	HEARTBEAT
 	HEALTH
+	TEST
 )
 
 func (e EventType) String() string {
@@ -53,7 +54,8 @@ func (e EventType) String() string {
 		return "HEARTBEAT"
 	case HEALTH:
 		return "HEALTH"
-
+	case TEST:
+		return "TEST"
 	}
 	return ""
 }
