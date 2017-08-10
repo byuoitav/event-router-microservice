@@ -1,12 +1,13 @@
 package eventinfrastructure
 
 import (
+	"bytes"
 	"errors"
 	"log"
+	"strings"
 
 	"github.com/fatih/color"
 	"github.com/xuther/go-message-router/common"
-	"github.com/xuther/go-message-router/publisher"
 	"github.com/xuther/go-message-router/subscriber"
 )
 
@@ -25,10 +26,10 @@ type Subscriber struct {
 		the device-monitoring-microserivce) will be hit
 		with the same information.
 	*/
-	pub *publisher.Publisher
+	pub *Publisher
 }
 
-func NewSubscriber(filters []string, pub *publisher.Publisher, requests ...string) *Subscriber {
+func NewSubscriber(filters []string, requests ...string) *Subscriber {
 	color.Set(color.FgBlue)
 	defer color.Unset()
 
@@ -41,8 +42,10 @@ func NewSubscriber(filters []string, pub *publisher.Publisher, requests ...strin
 		log.Fatalf("[error] Failed to create subscriber. error: %s", err.Error())
 	}
 
+	// add Test to all subscribers
+	filters = append(filters, Test)
 	s.filters = filters
-	s.pub = pub
+
 	s.subscriptions = make(chan string, 10)
 	go s.addAddresses()
 
@@ -56,6 +59,14 @@ func NewSubscriber(filters []string, pub *publisher.Publisher, requests ...strin
 	go s.read()
 
 	return &s
+}
+
+func (s *Subscriber) TiePublisher(p *Publisher) {
+	s.pub = p
+}
+
+func (s *Subscriber) GetPublisher() *Publisher {
+	return s.pub
 }
 
 func HandleSubscriptionRequest(cr ConnectionRequest, sub *Subscriber) error {
@@ -89,16 +100,17 @@ func (s *Subscriber) read() {
 	for {
 		message := s.subscriber.Read()
 
-		header := string(message.MessageHeader[:])
-		log.Printf("message header %s", header)
-		if header == eventType.TEST {
+		header := string(bytes.Trim(message.MessageHeader[:], "\x00"))
+		if strings.EqualFold(header, Test) {
+			// other stuff with it, don't put it into the message channel
+			// works to here:)
+		} else {
+			color.Set(color.FgBlue)
+			log.Printf("[subscriber] Recieved message: %s", message)
+			color.Unset()
 
+			s.MessageChan <- message
 		}
 
-		color.Set(color.FgBlue)
-		log.Printf("[subscriber] Recieved message: %s", message)
-		color.Unset()
-
-		s.MessageChan <- message
 	}
 }

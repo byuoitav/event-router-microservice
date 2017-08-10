@@ -30,3 +30,5 @@ const Health = "health"
 const Metrics = "metrics"
 
 const UIFeature = "uifeature"
+
+const Test = "test"
