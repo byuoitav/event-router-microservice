@@ -11,7 +11,6 @@ import (
 	"time"
 
 	"github.com/byuoitav/av-api/dbo"
-	"github.com/byuoitav/device-monitoring-microservice/microservicestatus"
 	"github.com/byuoitav/event-router-microservice/eventinfrastructure"
 	"github.com/fatih/color"
 	"github.com/jessemillar/health"

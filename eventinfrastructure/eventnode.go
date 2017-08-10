@@ -7,6 +7,7 @@ import (
 	"log"
 	"strings"
 
+	"github.com/byuoitav/device-monitoring-microservice/healthinfrastructure"
 	"github.com/fatih/color"
 	"github.com/xuther/go-message-router/common"
 	"github.com/xuther/go-message-router/publisher"
@@ -14,22 +15,29 @@ import (
 )
 
 type EventNode struct {
+	Name  string
+	Port  string
+	Read  chan common.Message
+	Write chan common.Message
+
 	subscriber    subscriber.Subscriber
 	filters       []string
 	subscriptions chan string
-	Read          chan common.Message
 
 	publisher publisher.Publisher
-	Write     chan common.Message
 }
 
 // filters: an array of strings to filter events recieved by
 // port: a unique port to publish events on
 // addrs: addresses of subscriber to subscribe to
-func NewEventNode(filters []string, port string, addrs ...string) *EventNode {
+// name: name of event node
+func NewEventNode(filters []string, port string, name string, addrs ...string) *EventNode {
 	color.Set(color.FgBlue)
 	defer color.Unset()
 	var n EventNode
+
+	n.Port = port
+	n.Name = name
 
 	//
 	// create subscriber
@@ -67,7 +75,7 @@ func NewEventNode(filters []string, port string, addrs ...string) *EventNode {
 
 	//
 	// create publisher
-	n.publisher, err = publisher.NewPublisher(port, 100, 10)
+	n.publisher, err = publisher.NewPublisher(n.Port, 100, 10)
 	if err != nil {
 		color.Set(color.FgHiRed)
 		log.Fatalf("[error] Failed to create publisher. error: %s", err.Error())
@@ -80,10 +88,46 @@ func NewEventNode(filters []string, port string, addrs ...string) *EventNode {
 	go n.write()
 
 	color.Set(color.FgGreen, color.Bold)
-	log.Printf("Event node created. Writing events on port: %s", port)
+	log.Printf("Event node '%s' created. Writing events on port: %s", n.Name, n.Port)
 	color.Unset()
 
 	return &n
+}
+
+func (n *EventNode) PublishEvent(e Event, eventType string) error {
+	toSend, err := json.Marshal(e)
+	if err != nil {
+		return err
+	}
+
+	header := [24]byte{}
+	copy(header[:], []byte(eventType))
+
+	n.Write <- common.Message{MessageHeader: header, MessageBody: toSend}
+	return nil
+}
+
+func (n *EventNode) PublishMessageByEventType(eventType string, body []byte) {
+	header := [24]byte{}
+	copy(header[:], []byte(eventType))
+
+	n.Write <- common.Message{MessageHeader: header, MessageBody: body}
+}
+
+func (n *EventNode) PublishJSONMessageByEventType(eventType string, i interface{}) error {
+	header := [24]byte{}
+	copy(header[:], []byte(eventType))
+
+	body, err := json.Marshal(i)
+	if err != nil {
+		return err
+	}
+
+	n.Write <- common.Message{MessageHeader: header, MessageBody: body}
+}
+
+func (n *EventNode) PublishMessage(m common.Message) {
+	n.Write <- m
 }
 
 func HandleSubscriptionRequest(cr ConnectionRequest, n *EventNode) error {
@@ -106,30 +150,6 @@ func HandleSubscriptionRequest(cr ConnectionRequest, n *EventNode) error {
 	*/
 
 	return nil
-}
-
-func (n *EventNode) PublishEvent(e Event, eventType string) error {
-	toSend, err := json.Marshal(&e)
-	if err != nil {
-		return err
-	}
-
-	header := [24]byte{}
-	copy(header[:], []byte(eventType))
-
-	n.Write <- common.Message{MessageHeader: header, MessageBody: toSend}
-	return nil
-}
-
-func (n *EventNode) PublishMessageByEventType(eventType string, body []byte) {
-	header := [24]byte{}
-	copy(header[:], []byte(eventType))
-
-	n.Write <- common.Message{MessageHeader: header, MessageBody: body}
-}
-
-func (n *EventNode) PublishCommonMessage(m common.Message) {
-	n.Write <- m
 }
 
 func (n *EventNode) addSubscriptions() {
@@ -155,8 +175,10 @@ func (n *EventNode) read() {
 
 		header := string(bytes.Trim(message.MessageHeader[:], "\x00"))
 		if strings.EqualFold(header, TestPleaseReply) {
-			// other stuff with it, don't put it into the message channel
-			// work to here:)
+			var s healthinfrastructure.EventNodeStatus
+			s.Name = n.Name
+
+			n.PublishJSONMessageByEventType(TestReply, s)
 		} else {
 			color.Set(color.FgBlue)
 			log.Printf("[subscriber] Recieved message: %s", message)
