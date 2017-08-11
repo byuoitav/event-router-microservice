@@ -14,30 +14,10 @@ import (
 	"time"
 
 	"github.com/fatih/color"
-	"github.com/labstack/echo"
 )
 
-const ContextPublisher = "publisher"
-const ContextSubscriber = "subscriber"
 const ContextRouter = "router"
-
-func BindPublisher(p *Publisher) echo.MiddlewareFunc {
-	return func(next echo.HandlerFunc) echo.HandlerFunc {
-		return func(c echo.Context) error {
-			c.Set(ContextPublisher, p)
-			return next(c)
-		}
-	}
-}
-
-func BindSubscriber(s *Subscriber) echo.MiddlewareFunc {
-	return func(next echo.HandlerFunc) echo.HandlerFunc {
-		return func(c echo.Context) error {
-			c.Set(ContextSubscriber, s)
-			return next(c)
-		}
-	}
-}
+const ContextEventNode = "eventnode"
 
 func SendConnectionRequest(url string, req ConnectionRequest, retry bool) error {
 	defer color.Unset()
