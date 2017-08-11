@@ -9,12 +9,6 @@ import (
 	"github.com/byuoitav/event-router-microservice/eventinfrastructure"
 )
 
-func BuildVersion(version string) map[string]string {
-	toReturn := make(map[string]string)
-	toReturn["version"] = version
-	return toReturn
-}
-
 func SendSuccessfulStartup(healthCheck func() map[string]string, MicroserviceName string, publish func(eventinfrastructure.Event)) error {
 	log.Printf("[HealthCheck] will report success in 10 seconds, waiting for listening services to be up")
 	time.Sleep(10 * time.Second)

@@ -11,7 +11,7 @@ import (
 	"time"
 
 	"github.com/byuoitav/av-api/dbo"
-	"github.com/byuoitav/device-monitoring-microservice/microservicestatus"
+	"github.com/byuoitav/device-monitoring-microservice/statusinfrastructure"
 	"github.com/byuoitav/event-router-microservice/eventinfrastructure"
 	"github.com/fatih/color"
 	"github.com/jessemillar/health"
@@ -40,11 +40,24 @@ func main() {
 	RoutingTable[eventinfrastructure.Metrics] = []string{eventinfrastructure.Translator}
 	RoutingTable[eventinfrastructure.UIFeature] = []string{eventinfrastructure.Room}
 
+	// Test event routing
+	RoutingTable[eventinfrastructure.TestStart] = []string{eventinfrastructure.TestPleaseReply}
+	RoutingTable[eventinfrastructure.TestPleaseReply] = []string{eventinfrastructure.TestExternal}
+	RoutingTable[eventinfrastructure.TestExternalReply] = []string{eventinfrastructure.TestReply}
+	RoutingTable[eventinfrastructure.TestReply] = []string{eventinfrastructure.TestEnd}
+
+	SubscribeTable := make(map[string]string)
+	SubscribeTable["localhost:7001"] = ""
+	SubscribeTable["localhost:7002"] = "localhost:6998/subscribe"
+	SubscribeTable["localhost:7003"] = "localhost:8888/subscribe"
+	SubscribeTable["localhost:7004"] = ""
+
 	// create the router
-	// and pass in all of the publishers it should subscribe to - just in case the router goes down.
-	// find a way to not hard code this?
-	// av-api, touchpanel-ui, event-translator
-	router := eventinfrastructure.NewRouter(RoutingTable, wg, port, "localhost:7001", "localhost:7003", "localhost:7002", "localhost:7004")
+	router := eventinfrastructure.NewRouter(RoutingTable, wg, port)
+
+	// subscribe to each key in the SubscribeTable
+	// and ask each router to subscribe
+	go DoSubscriptionTable(router, SubscribeTable)
 
 	server := echo.New()
 	server.Pre(middleware.RemoveTrailingSlash())
@@ -106,16 +119,33 @@ func main() {
 	wg.Wait()
 }
 
+func DoSubscriptionTable(router *eventinfrastructure.Router, table map[string]string) {
+	hn := os.Getenv("PI_HOSTNAME")
+	var cr eventinfrastructure.ConnectionRequest
+	cr.PublisherAddr = hn + ":7000"
+
+	for k, v := range table {
+		router.NewSubscriptionChan <- k
+
+		if len(v) > 0 {
+			color.Set(color.FgYellow, color.Bold)
+			log.Printf("Creating connection with %s", v)
+			color.Unset()
+			go eventinfrastructure.SendConnectionRequest("http://"+v, cr, true)
+		}
+	}
+}
+
 func GetStatus(context echo.Context) error {
-	var s microservicestatus.Status
+	var s statusinfrastructure.Status
 	var err error
-	s.Version, err = microservicestatus.GetVersion("version.txt")
+	s.Version, err = statusinfrastructure.GetVersion("version.txt")
 	if err != nil {
 		s.Version = "missing"
-		s.Status = microservicestatus.StatusSick
+		s.Status = statusinfrastructure.StatusSick
 		s.StatusInfo = fmt.Sprintf("Error: %s", err.Error())
 	} else {
-		s.Status = microservicestatus.StatusOK
+		s.Status = statusinfrastructure.StatusOK
 		s.StatusInfo = ""
 	}
 

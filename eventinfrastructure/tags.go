@@ -30,3 +30,13 @@ const Health = "health"
 const Metrics = "metrics"
 
 const UIFeature = "uifeature"
+
+// for measuring status of event routing
+const (
+	TestStart         = "teststart"
+	TestPleaseReply   = "testreply"
+	TestExternal      = "testexternal"
+	TestExternalReply = "testexternalreply"
+	TestReply         = "testreply"
+	TestEnd           = "testend"
+)
