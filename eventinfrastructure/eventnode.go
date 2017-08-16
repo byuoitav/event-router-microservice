@@ -3,7 +3,6 @@ package eventinfrastructure
 import (
 	"bytes"
 	"encoding/json"
-	"errors"
 	"log"
 	"strings"
 
@@ -130,28 +129,6 @@ func (n *EventNode) PublishJSONMessageByEventType(eventType string, i interface{
 
 func (n *EventNode) PublishMessage(m common.Message) {
 	n.Write <- m
-}
-
-func HandleSubscriptionRequest(cr ConnectionRequest, n *EventNode) error {
-	if len(cr.PublisherAddr) > 0 {
-		color.Set(color.FgYellow, color.Bold)
-		log.Printf("Subscribing to %s", cr.PublisherAddr)
-		color.Unset()
-
-		n.subscriptions <- cr.PublisherAddr
-	} else {
-		return errors.New("publisher-address can not be empty.")
-	}
-
-	/*
-		if len(cr.SubscriberEndpoint) > 0 {
-			color.Set(color.FgYellow)
-			log.Printf("Responding to %s's subscription request @ %s", cr.PublisherAddr, cr.SubscriberEndpoint)
-			color.Unset()
-		}
-	*/
-
-	return nil
 }
 
 func (n *EventNode) addSubscriptions() {

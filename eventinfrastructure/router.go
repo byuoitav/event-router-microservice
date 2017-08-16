@@ -23,7 +23,7 @@ type ConnectionRequest struct {
 	SubscriberEndpoint string `json:"subscriber-endpoint"` // hit this endpoint with your publisher address, and I will subscribe to you
 }
 
-func NewRouter(routingTable map[string][]string, wg sync.WaitGroup, port string, addrs ...string) *Router {
+func NewRouter(routingTable map[string][]string, wg sync.WaitGroup, port string, addrs []string) *Router {
 	color.Set(color.FgCyan)
 	defer color.Unset()
 
