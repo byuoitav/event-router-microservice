@@ -94,6 +94,18 @@ func NewEventNode(name, port string, filters []string, addrs ...string) *EventNo
 	return &n
 }
 
+func (n *EventNode) ConnectToRouter() error {
+	var cr ConnectionRequest
+	cr.PublisherAddr = "localhost:" + n.Port
+
+	color.Set(color.FgYellow)
+	log.Printf("Telling router to subscribe to me")
+	color.Unset()
+
+	err := SendConnectionRequest("http://localhost:6999/subscribe", cr, false)
+	return err
+}
+
 func (n *EventNode) PublishEvent(e Event, eventType string) error {
 	toSend, err := json.Marshal(e)
 	if err != nil {
