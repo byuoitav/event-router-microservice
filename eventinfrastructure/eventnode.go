@@ -182,7 +182,7 @@ func (n *EventNode) read() {
 			n.PublishJSONMessageByEventType(TestReply, s)
 		} else {
 			color.Set(color.FgBlue)
-			log.Printf("[subscriber] Recieved message: %s", message)
+			log.Printf("Recieved message: %s", message)
 			color.Unset()
 
 			n.Read <- message
@@ -197,7 +197,7 @@ func (n *EventNode) write() {
 		case message, ok := <-n.Write:
 			if !ok {
 				color.Set(color.FgHiRed)
-				log.Fatalf("[error] publisher write channel closed")
+				log.Fatalf("publisher write channel closed")
 			}
 
 			color.Set(color.FgMagenta)
@@ -206,7 +206,7 @@ func (n *EventNode) write() {
 			err := n.publisher.Write(message)
 			if err != nil {
 				color.Set(color.FgHiRed)
-				log.Printf("[error] error publishing message: %s", err.Error())
+				log.Printf("error publishing message: %s", err.Error())
 			}
 			color.Unset()
 		}
