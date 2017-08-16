@@ -81,6 +81,7 @@ func (r *Router) HandleConnectionRequest(cr ConnectionRequest) error {
 	if len(cr.SubscriberEndpoint) > 0 && len(r.address) > 0 {
 		var response ConnectionRequest
 		response.PublisherAddr = r.address
+		log.Printf("Sending request to %s", response.PublisherAddr)
 
 		SendConnectionRequest(cr.SubscriberEndpoint, response, true)
 	}

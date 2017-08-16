@@ -34,9 +34,9 @@ func SendConnectionRequest(url string, req ConnectionRequest, retry bool) error 
 		color.Set(color.FgHiRed)
 		if resp != nil {
 			body, _ := ioutil.ReadAll(resp.Body)
-			log.Printf("[error] failed to post. Response: (%v) %s", resp.StatusCode, body)
+			log.Printf("[%s] failed to post. Response: (%v) %s", url, resp.StatusCode, body)
 		} else {
-			log.Printf("[error] failed to post. Error: %s", err.Error())
+			log.Printf("[%s] failed to post. Error: %s", url, err.Error())
 		}
 
 		if !retry {
