@@ -44,6 +44,7 @@ func SendConnectionRequest(url string, req ConnectionRequest, retry bool) error 
 		}
 
 		log.Printf("Trying again in 5 seconds.")
+		color.Unset()
 		time.Sleep(5 * time.Second)
 		resp, err = http.Post(url, "application/json", bytes.NewBuffer(body))
 		count++

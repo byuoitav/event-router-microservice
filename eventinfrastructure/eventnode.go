@@ -88,7 +88,8 @@ func NewEventNode(name, port string, filters []string, addrs ...string) *EventNo
 	go n.write()
 
 	color.Set(color.FgGreen, color.Bold)
-	log.Printf("Event node '%s' created. Writing events on port: %s", n.Name, n.Port)
+	log.Printf("Event node '%s' created. Writing events on port: %s.", n.Name, n.Port)
+	log.Printf("Subscribed to events: %s", n.filters)
 	color.Unset()
 
 	return &n
@@ -176,6 +177,10 @@ func (n *EventNode) read() {
 
 		header := string(bytes.Trim(message.MessageHeader[:], "\x00"))
 		if strings.EqualFold(header, TestPleaseReply) {
+			color.Set(color.FgBlue, color.Bold)
+			log.Printf("Responding to event test")
+			color.Unset()
+
 			var s statusinfrastructure.EventNodeStatus
 			s.Name = n.Name
 

@@ -67,6 +67,13 @@ func main() {
 	server.GET("/mstatus", GetStatus)
 	server.POST("/subscribe", router.HandleRequest)
 
+	go SubscribeOutsidePi(router)
+
+	server.Start(":6999")
+	wg.Wait()
+}
+
+func SubscribeOutsidePi(router *eventinfrastructure.Router) {
 	ip := eventinfrastructure.GetIP()
 	pihn := os.Getenv("PI_HOSTNAME")
 	if len(pihn) == 0 {
@@ -74,49 +81,44 @@ func main() {
 	}
 	values := strings.Split(strings.TrimSpace(pihn), "-")
 
-	go func() {
-		for {
-			devices, err := dbo.GetDevicesByBuildingAndRoomAndRole(values[0], values[1], "EventRouter")
-			if err != nil {
-				log.Printf("[error] Connecting to the Configuration DB failed, retrying in 5 seconds.")
-				time.Sleep(5 * time.Second)
-			} else {
-				color.Set(color.FgYellow, color.Bold)
-				log.Printf("Connection to the Configuration DB established.")
-				color.Unset()
+	for {
+		devices, err := dbo.GetDevicesByBuildingAndRoomAndRole(values[0], values[1], "EventRouter")
+		if err != nil {
+			log.Printf("[error] Connecting to the Configuration DB failed, retrying in 5 seconds.")
+			time.Sleep(5 * time.Second)
+		} else {
+			color.Set(color.FgYellow, color.Bold)
+			log.Printf("Connection to the Configuration DB established.")
+			color.Unset()
 
-				addresses := []string{}
-				for _, device := range devices {
-					if !dev {
-						if strings.EqualFold(device.GetFullName(), pihn) {
-							continue
-						}
+			addresses := []string{}
+			for _, device := range devices {
+				if !dev {
+					if strings.EqualFold(device.GetFullName(), pihn) {
+						continue
 					}
-					addresses = append(addresses, device.Address+":6999/subscribe")
 				}
-
-				var cr eventinfrastructure.ConnectionRequest
-				cr.PublisherAddr = ip + ":7000"
-				cr.SubscriberEndpoint = fmt.Sprintf("http://%s:6999/subscribe", ip)
-
-				for _, address := range addresses {
-					split := strings.Split(address, ":")
-					host, err := net.LookupHost(split[0])
-					if err != nil {
-						log.Printf("error %s", err.Error())
-					}
-					color.Set(color.FgYellow, color.Bold)
-					log.Printf("Creating connection with %s (%s)", address, host)
-					color.Unset()
-					go eventinfrastructure.SendConnectionRequest("http://"+address, cr, false)
-				}
-				return
+				addresses = append(addresses, device.Address+":6999/subscribe")
 			}
-		}
-	}()
 
-	server.Start(":6999")
-	wg.Wait()
+			var cr eventinfrastructure.ConnectionRequest
+			cr.PublisherAddr = ip + ":7000"
+			cr.SubscriberEndpoint = fmt.Sprintf("http://%s:6999/subscribe", ip)
+
+			for _, address := range addresses {
+				split := strings.Split(address, ":")
+				host, err := net.LookupHost(split[0])
+				if err != nil {
+					log.Printf("error %s", err.Error())
+				}
+				color.Set(color.FgYellow, color.Bold)
+				log.Printf("Creating connection with %s (%s)", address, host)
+				color.Unset()
+				go eventinfrastructure.SendConnectionRequest("http://"+address, cr, false)
+			}
+			return
+		}
+	}
 }
 
 func DoSubscriptionTable(router *eventinfrastructure.Router, table map[string]string) {
