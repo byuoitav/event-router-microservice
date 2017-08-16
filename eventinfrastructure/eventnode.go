@@ -102,7 +102,7 @@ func (n *EventNode) ConnectToRouter() error {
 	log.Printf("Telling router to subscribe to me")
 	color.Unset()
 
-	err := SendConnectionRequest("http://localhost:6999/subscribe", cr, false)
+	err := SendConnectionRequest("http://localhost:6999/subscribe", cr, true)
 	return err
 }
 
