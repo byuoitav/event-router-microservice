@@ -100,7 +100,7 @@ func (r *Router) addSubscriptions() {
 			color.Set(color.FgCyan)
 			log.Printf("[router] Adding subscription to %s", request)
 			color.Unset()
-			r.router.Subscribe(request, 10, 3)
+			r.router.Subscribe(request, 100, 5*time.Second)
 		}
 	}
 }

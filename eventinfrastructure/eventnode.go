@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"log"
 	"strings"
+	"time"
 
 	"github.com/byuoitav/device-monitoring-microservice/statusinfrastructure"
 	"github.com/fatih/color"
@@ -94,18 +95,6 @@ func NewEventNode(name, port string, filters []string, addrs ...string) *EventNo
 	return &n
 }
 
-func (n *EventNode) ConnectToRouter() error {
-	var cr ConnectionRequest
-	cr.PublisherAddr = "localhost:" + n.Port
-
-	color.Set(color.FgYellow)
-	log.Printf("Telling router to subscribe to %s (me!)", cr.PublisherAddr)
-	color.Unset()
-
-	err := SendConnectionRequest("http://localhost:6999/subscribe", cr, true)
-	return err
-}
-
 func (n *EventNode) PublishEvent(e Event, eventType string) error {
 	toSend, err := json.Marshal(e)
 	if err != nil {
@@ -147,14 +136,26 @@ func (n *EventNode) addSubscriptions() {
 	for {
 		select {
 		case addr, ok := <-n.subscriptions:
-			color.Set(color.FgBlue)
 			if !ok {
 				color.Set(color.FgHiRed)
-				log.Printf("[error] subscriber address channel closed")
+				log.Printf("subscriber address channel closed")
 				color.Unset()
+				return
 			}
-			log.Printf("[subscriber] Subscribing to %s", addr)
-			n.subscriber.Subscribe(addr, n.filters)
+
+			color.Set(color.FgBlue)
+			log.Printf("Subscribing to %s", addr)
+			err := n.subscriber.Subscribe(addr, n.filters)
+			for err != nil {
+				color.Set(color.FgRed)
+				log.Printf("Failed to subscribe to %s. Retrying in 5 seconds", addr)
+				time.Sleep(5 * time.Second)
+
+				err = n.subscriber.Subscribe(addr, n.filters)
+			}
+			color.Unset()
+			color.Set(color.FgGreen)
+			log.Printf("Subscribed to %s", addr)
 			color.Unset()
 		}
 	}
