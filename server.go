@@ -1,8 +1,7 @@
 package main
 
 import (
-	"bytes"
-	"encoding/json"
+	"fmt"
 	"log"
 	"net"
 	"net/http"
@@ -12,17 +11,19 @@ import (
 	"time"
 
 	"github.com/byuoitav/av-api/dbo"
+	"github.com/byuoitav/device-monitoring-microservice/statusinfrastructure"
 	"github.com/byuoitav/event-router-microservice/eventinfrastructure"
-	"github.com/byuoitav/event-router-microservice/handlers"
-	"github.com/byuoitav/event-router-microservice/subscription"
+	"github.com/fatih/color"
+	"github.com/jessemillar/health"
 	"github.com/labstack/echo"
 	"github.com/labstack/echo/middleware"
-	"github.com/xuther/go-message-router/router"
 )
 
+var dev bool
+
 func main() {
+	defer color.Unset()
 	var wg sync.WaitGroup
-	var err error
 
 	wg.Add(3)
 	port := "7000"
@@ -37,30 +38,42 @@ func main() {
 	RoutingTable[eventinfrastructure.External] = []string{eventinfrastructure.UI}
 	RoutingTable[eventinfrastructure.APIError] = []string{eventinfrastructure.UI, eventinfrastructure.Translator}
 	RoutingTable[eventinfrastructure.Metrics] = []string{eventinfrastructure.Translator}
+	RoutingTable[eventinfrastructure.UIFeature] = []string{eventinfrastructure.Room}
 
-	subscription.R = router.Router{}
+	// Test event routing
+	RoutingTable[eventinfrastructure.TestStart] = []string{eventinfrastructure.TestPleaseReply}
+	RoutingTable[eventinfrastructure.TestPleaseReply] = []string{eventinfrastructure.TestExternal}
+	RoutingTable[eventinfrastructure.TestExternalReply] = []string{eventinfrastructure.TestReply}
+	RoutingTable[eventinfrastructure.TestReply] = []string{eventinfrastructure.TestEnd}
 
-	err = subscription.R.Start(RoutingTable, wg, 1000, []string{}, 120, time.Second*3, port)
-	if err != nil {
-		log.Fatal(err)
-	}
+	SubscribeTable := make(map[string]string)
+	SubscribeTable["localhost:7001"] = ""
+	SubscribeTable["localhost:7002"] = "localhost:6998/subscribe"
+	SubscribeTable["localhost:7003"] = "localhost:8888/subscribe"
+	SubscribeTable["localhost:7004"] = ""
+
+	// create the router
+	router := eventinfrastructure.NewRouter(RoutingTable, wg, port)
+
+	// subscribe to each key in the SubscribeTable
+	// and ask each router to subscribe
+	go DoSubscriptionTable(router, SubscribeTable)
 
 	server := echo.New()
 	server.Pre(middleware.RemoveTrailingSlash())
 	server.Use(middleware.CORS())
 
-	//	server.GET("/health", echo.WrapHandler(http.HandlerFunc(health.Check)))
-	server.POST("/subscribe", handlers.Subscribe)
+	server.GET("/health", echo.WrapHandler(http.HandlerFunc(health.Check)))
+	server.GET("/mstatus", GetStatus)
+	server.POST("/subscribe", router.HandleRequest)
 
-	log.Printf("Waiting for new subscriptions")
-
-	// get all the devices with the eventrouter role
-	subscription.Hostname = os.Getenv("PI_HOSTNAME")
-	if len(subscription.Hostname) == 0 {
-		log.Fatalf("[error] PI_HOSTNAME is not set.")
+	ip := eventinfrastructure.GetIP()
+	pihn := os.Getenv("PI_HOSTNAME")
+	if len(pihn) == 0 {
+		log.Fatalf("PI_HOSTNAME is not set.")
 	}
-	log.Printf("PI_HOSTNAME = %s", subscription.Hostname)
-	values := strings.Split(strings.TrimSpace(subscription.Hostname), "-")
+	values := strings.Split(strings.TrimSpace(pihn), "-")
+
 	go func() {
 		for {
 			devices, err := dbo.GetDevicesByBuildingAndRoomAndRole(values[0], values[1], "EventRouter")
@@ -68,38 +81,34 @@ func main() {
 				log.Printf("[error] Connecting to the Configuration DB failed, retrying in 5 seconds.")
 				time.Sleep(5 * time.Second)
 			} else {
+				color.Set(color.FgYellow, color.Bold)
 				log.Printf("Connection to the Configuration DB established.")
+				color.Unset()
 
 				addresses := []string{}
 				for _, device := range devices {
-					if strings.EqualFold(device.GetFullName(), subscription.Hostname) {
-						continue
+					if !dev {
+						if strings.EqualFold(device.GetFullName(), pihn) {
+							continue
+						}
 					}
 					addresses = append(addresses, device.Address+":6999/subscribe")
 				}
 
-				var s subscription.SubscribeRequest
-				s.Address = subscription.Hostname + ".byu.edu:7000"
-				s.PubAddress = subscription.Hostname + ".byu.edu:6999/subscribe"
-				body, err := json.Marshal(s)
-				if err != nil {
-					log.Printf("[error] Failed to unmarshal subscription body: %s", err.Error())
-				}
+				var cr eventinfrastructure.ConnectionRequest
+				cr.PublisherAddr = ip + ":7000"
+				cr.SubscriberEndpoint = fmt.Sprintf("http://%s:6999/subscribe", ip)
 
 				for _, address := range addresses {
-					log.Printf("Posting to %s", address)
-					resp, err := http.Post("http://"+address, "application/json", bytes.NewBuffer(body))
+					split := strings.Split(address, ":")
+					host, err := net.LookupHost(split[0])
 					if err != nil {
-						log.Printf("[error] Failed to post: %s", err.Error())
+						log.Printf("error %s", err.Error())
 					}
-					if resp != nil {
-						defer resp.Body.Close()
-						if resp.StatusCode == 200 {
-							log.Printf("Post to %s successful", address)
-						} else {
-							log.Printf("[error] post to %s unsuccessful. Response:\n %s", address, resp)
-						}
-					}
+					color.Set(color.FgYellow, color.Bold)
+					log.Printf("Creating connection with %s (%s)", address, host)
+					color.Unset()
+					go eventinfrastructure.SendConnectionRequest("http://"+address, cr, false)
 				}
 				return
 			}
@@ -110,15 +119,35 @@ func main() {
 	wg.Wait()
 }
 
-func GetOutboundIP() string {
-	conn, err := net.Dial("udp", "8.8.8.8:80")
-	if err != nil {
-		log.Fatal(err)
+func DoSubscriptionTable(router *eventinfrastructure.Router, table map[string]string) {
+	hn := os.Getenv("PI_HOSTNAME")
+	var cr eventinfrastructure.ConnectionRequest
+	cr.PublisherAddr = hn + ":7000"
+
+	for k, v := range table {
+		router.NewSubscriptionChan <- k
+
+		if len(v) > 0 {
+			color.Set(color.FgYellow, color.Bold)
+			log.Printf("Creating connection with %s", v)
+			color.Unset()
+			go eventinfrastructure.SendConnectionRequest("http://"+v, cr, true)
+		}
 	}
-	defer conn.Close()
+}
 
-	localAddr := conn.LocalAddr().String()
-	idx := strings.LastIndex(localAddr, ":")
+func GetStatus(context echo.Context) error {
+	var s statusinfrastructure.Status
+	var err error
+	s.Version, err = statusinfrastructure.GetVersion("version.txt")
+	if err != nil {
+		s.Version = "missing"
+		s.Status = statusinfrastructure.StatusSick
+		s.StatusInfo = fmt.Sprintf("Error: %s", err.Error())
+	} else {
+		s.Status = statusinfrastructure.StatusOK
+		s.StatusInfo = ""
+	}
 
-	return localAddr[0:idx]
+	return context.JSON(http.StatusOK, s)
 }
