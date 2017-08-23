@@ -8,6 +8,7 @@ import (
 
 type Event struct {
 	Hostname         string    `json:"hostname,omitempty"`
+	Requestor        string    `json:"requestor,omitempty"`
 	Timestamp        string    `json:"timestamp,omitempty"`
 	LocalEnvironment bool      `json:"localEnvironment,omitempty"`
 	Event            EventInfo `json:"event,omitempty"`
