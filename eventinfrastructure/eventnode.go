@@ -3,9 +3,9 @@ package eventinfrastructure
 import (
 	"bytes"
 	"encoding/json"
-	"errors"
 	"log"
 	"strings"
+	"time"
 
 	"github.com/byuoitav/device-monitoring-microservice/statusinfrastructure"
 	"github.com/fatih/color"
@@ -88,7 +88,8 @@ func NewEventNode(name, port string, filters []string, addrs ...string) *EventNo
 	go n.write()
 
 	color.Set(color.FgGreen, color.Bold)
-	log.Printf("Event node '%s' created. Writing events on port: %s", n.Name, n.Port)
+	log.Printf("Event node '%s' created. Writing events on port: %s.", n.Name, n.Port)
+	log.Printf("Subscribed to events: %s", n.filters)
 	color.Unset()
 
 	return &n
@@ -131,40 +132,30 @@ func (n *EventNode) PublishMessage(m common.Message) {
 	n.Write <- m
 }
 
-func HandleSubscriptionRequest(cr ConnectionRequest, n *EventNode) error {
-	if len(cr.PublisherAddr) > 0 {
-		color.Set(color.FgYellow, color.Bold)
-		log.Printf("Subscribing to %s", cr.PublisherAddr)
-		color.Unset()
-
-		n.subscriptions <- cr.PublisherAddr
-	} else {
-		return errors.New("publisher-address can not be empty.")
-	}
-
-	/*
-		if len(cr.SubscriberEndpoint) > 0 {
-			color.Set(color.FgYellow)
-			log.Printf("Responding to %s's subscription request @ %s", cr.PublisherAddr, cr.SubscriberEndpoint)
-			color.Unset()
-		}
-	*/
-
-	return nil
-}
-
 func (n *EventNode) addSubscriptions() {
 	for {
 		select {
 		case addr, ok := <-n.subscriptions:
-			color.Set(color.FgBlue)
 			if !ok {
 				color.Set(color.FgHiRed)
-				log.Printf("[error] subscriber address channel closed")
+				log.Printf("subscriber address channel closed")
 				color.Unset()
+				return
 			}
-			log.Printf("[subscriber] Subscribing to %s", addr)
-			n.subscriber.Subscribe(addr, n.filters)
+
+			color.Set(color.FgBlue)
+			log.Printf("Subscribing to %s", addr)
+			err := n.subscriber.Subscribe(addr, n.filters)
+			for err != nil {
+				color.Set(color.FgRed)
+				log.Printf("Failed to subscribe to %s. Retrying in 5 seconds", addr)
+				time.Sleep(5 * time.Second)
+
+				err = n.subscriber.Subscribe(addr, n.filters)
+			}
+			color.Unset()
+			color.Set(color.FgGreen)
+			log.Printf("Subscribed to %s", addr)
 			color.Unset()
 		}
 	}
@@ -176,6 +167,10 @@ func (n *EventNode) read() {
 
 		header := string(bytes.Trim(message.MessageHeader[:], "\x00"))
 		if strings.EqualFold(header, TestPleaseReply) {
+			color.Set(color.FgBlue, color.Bold)
+			log.Printf("Responding to event test")
+			color.Unset()
+
 			var s statusinfrastructure.EventNodeStatus
 			s.Name = n.Name
 
