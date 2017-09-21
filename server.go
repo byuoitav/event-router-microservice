@@ -40,7 +40,8 @@ func main() {
 
 	RoutingTable[ei.TestStart] = []string{ei.TestPleaseReply}
 	RoutingTable[ei.TestPleaseReply] = []string{ei.TestExternal}
-	RoutingTable[ei.TestExternalReply] = []string{ei.TestReply}
+	RoutingTable[ei.TestExternal] = []string{ei.TestExternalReply}
+	//	RoutingTable[ei.TestExternalReply] = []string{ei.TestReply}
 	RoutingTable[ei.TestReply] = []string{ei.TestEnd}
 
 	var nodes []string
