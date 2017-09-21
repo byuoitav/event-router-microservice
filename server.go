@@ -29,7 +29,7 @@ func main() {
 
 	RoutingTable[ei.TestStart] = []string{ei.TestPleaseReply}    // local DM  --> local microservices (everyone listens to TestPleaseReply) and external routers
 	RoutingTable[ei.TestPleaseReply] = []string{ei.TestExternal} // external routers --> external DM's
-	RoutingTable[ei.TestExternalReply] = []string{ei.TestEnd}    // external DM --> lo --> local DM
+	RoutingTable[ei.TestExternalReply] = []string{ei.TestReply}  // external DM --> external router
 	RoutingTable[ei.TestReply] = []string{ei.TestEnd}            // local microservices and external DM --> local DM
 
 	RoutingTable[ei.Room] = []string{ei.UI}
