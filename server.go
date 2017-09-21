@@ -38,8 +38,10 @@ func main() {
 	RoutingTable[eventinfrastructure.Metrics] = []string{eventinfrastructure.Translator}
 	RoutingTable[eventinfrastructure.UIFeature] = []string{eventinfrastructure.Room}
 
-	RoutingTable[eventinfrastructure.TestStart] = []string{eventinfrastructure.TestPleaseReply}
-	RoutingTable[eventinfrastructure.TestPleaseReply] = []string{eventinfrastructure.TestExternal}
+	RoutingTable[eventinfrastructure.TestStart] = []string{eventinfrastructure.TestPleaseReply, eventinfrastructure.TestExternal}
+	/*
+		RoutingTable[eventinfrastructure.TestPleaseReply] = []string{eventinfrastructure.TestExternal}
+	*/
 	RoutingTable[eventinfrastructure.TestExternalReply] = []string{eventinfrastructure.TestReply}
 	RoutingTable[eventinfrastructure.TestReply] = []string{eventinfrastructure.TestEnd}
 
