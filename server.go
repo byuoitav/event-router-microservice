@@ -25,8 +25,13 @@ func main() {
 
 	wg.Add(3)
 	port := "7000"
-
 	RoutingTable := make(map[string][]string)
+
+	RoutingTable[ei.TestStart] = []string{ei.TestPleaseReply}    // local DM  --> local microservices (everyone listens to TestPleaseReply) and external routers
+	RoutingTable[ei.TestPleaseReply] = []string{ei.TestExternal} // external routers --> external DM's
+	RoutingTable[ei.TestExternalReply] = []string{ei.TestEnd}    // external DM --> lo --> local DM
+	RoutingTable[ei.TestReply] = []string{ei.TestEnd}            // local microservices and external DM --> local DM
+
 	RoutingTable[ei.Room] = []string{ei.UI}
 	RoutingTable[ei.APISuccess] = []string{
 		ei.Translator,
@@ -37,12 +42,6 @@ func main() {
 	RoutingTable[ei.APIError] = []string{ei.UI, ei.Translator}
 	RoutingTable[ei.Metrics] = []string{ei.Translator}
 	RoutingTable[ei.UIFeature] = []string{ei.Room}
-
-	RoutingTable[ei.TestStart] = []string{ei.TestPleaseReply}
-	RoutingTable[ei.TestPleaseReply] = []string{ei.TestExternal}
-	RoutingTable[ei.TestExternal] = []string{ei.TestExternalReply}
-	//	RoutingTable[ei.TestExternalReply] = []string{ei.TestReply}
-	RoutingTable[ei.TestReply] = []string{ei.TestEnd}
 
 	var nodes []string
 	addrs := strings.Split(os.Getenv("EVENT_NODE_ADDRESSES"), ",")
