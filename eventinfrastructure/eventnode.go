@@ -175,13 +175,13 @@ func (n *EventNode) read() {
 			s.Name = n.Name
 
 			n.PublishJSONMessageByEventType(TestReply, s)
-		} else {
-			color.Set(color.FgBlue)
-			log.Printf("Recieved message: %s", message)
-			color.Unset()
-
-			n.Read <- message
 		}
+
+		color.Set(color.FgBlue)
+		log.Printf("Recieved message: %s", message)
+		color.Unset()
+
+		n.Read <- message
 
 	}
 }
