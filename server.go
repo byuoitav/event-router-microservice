@@ -12,7 +12,7 @@ import (
 
 	"github.com/byuoitav/av-api/dbo"
 	"github.com/byuoitav/device-monitoring-microservice/statusinfrastructure"
-	"github.com/byuoitav/event-router-microservice/eventinfrastructure"
+	ei "github.com/byuoitav/event-router-microservice/eventinfrastructure"
 	"github.com/fatih/color"
 	"github.com/jessemillar/health"
 	"github.com/labstack/echo"
@@ -25,23 +25,23 @@ func main() {
 
 	wg.Add(3)
 	port := "7000"
-
 	RoutingTable := make(map[string][]string)
-	RoutingTable[eventinfrastructure.Room] = []string{eventinfrastructure.UI}
-	RoutingTable[eventinfrastructure.APISuccess] = []string{
-		eventinfrastructure.Translator,
-		eventinfrastructure.UI,
-		eventinfrastructure.Room,
-	}
-	RoutingTable[eventinfrastructure.External] = []string{eventinfrastructure.UI}
-	RoutingTable[eventinfrastructure.APIError] = []string{eventinfrastructure.UI, eventinfrastructure.Translator}
-	RoutingTable[eventinfrastructure.Metrics] = []string{eventinfrastructure.Translator}
-	RoutingTable[eventinfrastructure.UIFeature] = []string{eventinfrastructure.Room}
 
-	RoutingTable[eventinfrastructure.TestStart] = []string{eventinfrastructure.TestPleaseReply}
-	RoutingTable[eventinfrastructure.TestPleaseReply] = []string{eventinfrastructure.TestExternal}
-	RoutingTable[eventinfrastructure.TestExternalReply] = []string{eventinfrastructure.TestReply}
-	RoutingTable[eventinfrastructure.TestReply] = []string{eventinfrastructure.TestEnd}
+	RoutingTable[ei.TestStart] = []string{ei.TestPleaseReply}    // local DM  --> local microservices (everyone listens to TestPleaseReply) and external routers
+	RoutingTable[ei.TestPleaseReply] = []string{ei.TestExternal} // external routers --> external DM's
+	RoutingTable[ei.TestExternalReply] = []string{ei.TestReply}  // external DM --> external router
+	RoutingTable[ei.TestReply] = []string{ei.TestEnd}            // local microservices and external DM --> local DM
+
+	RoutingTable[ei.Room] = []string{ei.UI}
+	RoutingTable[ei.APISuccess] = []string{
+		ei.Translator,
+		ei.UI,
+		ei.Room,
+	}
+	RoutingTable[ei.External] = []string{ei.UI}
+	RoutingTable[ei.APIError] = []string{ei.UI, ei.Translator}
+	RoutingTable[ei.Metrics] = []string{ei.Translator}
+	RoutingTable[ei.UIFeature] = []string{ei.Room}
 
 	var nodes []string
 	addrs := strings.Split(os.Getenv("EVENT_NODE_ADDRESSES"), ",")
@@ -50,7 +50,7 @@ func main() {
 	}
 
 	// create the router
-	router := eventinfrastructure.NewRouter(RoutingTable, wg, port, nodes)
+	router := ei.NewRouter(RoutingTable, wg, port, nodes)
 
 	server := echo.New()
 	server.Pre(middleware.RemoveTrailingSlash())
@@ -66,7 +66,7 @@ func main() {
 	wg.Wait()
 }
 
-func SubscribeOutsidePi(router *eventinfrastructure.Router) {
+func SubscribeOutsidePi(router *ei.Router) {
 	devhn := os.Getenv("DEVELOPMENT_HOSTNAME")
 	if len(devhn) > 0 {
 		color.Set(color.FgYellow)
@@ -74,7 +74,7 @@ func SubscribeOutsidePi(router *eventinfrastructure.Router) {
 		color.Unset()
 	}
 
-	ip := eventinfrastructure.GetIP()
+	ip := ei.GetIP()
 
 	pihn := os.Getenv("PI_HOSTNAME")
 	if len(pihn) == 0 {
@@ -104,7 +104,7 @@ func SubscribeOutsidePi(router *eventinfrastructure.Router) {
 				addresses = append(addresses, device.Address+":6999/subscribe")
 			}
 
-			var cr eventinfrastructure.ConnectionRequest
+			var cr ei.ConnectionRequest
 			cr.PublisherAddr = ip + ":7000"
 			cr.SubscriberEndpoint = fmt.Sprintf("http://%s:6999/subscribe", ip)
 
@@ -117,7 +117,7 @@ func SubscribeOutsidePi(router *eventinfrastructure.Router) {
 				color.Set(color.FgYellow, color.Bold)
 				log.Printf("Creating connection with %s (%s)", address, host)
 				color.Unset()
-				go eventinfrastructure.SendConnectionRequest("http://"+address, cr, false)
+				go ei.SendConnectionRequest("http://"+address, cr, false)
 			}
 			return
 		}

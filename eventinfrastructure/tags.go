@@ -34,7 +34,7 @@ const UIFeature = "uifeature"
 // for measuring status of event routing
 const (
 	TestStart         = "teststart"
-	TestPleaseReply   = "testreply"
+	TestPleaseReply   = "testpleasereply"
 	TestExternal      = "testexternal"
 	TestExternalReply = "testexternalreply"
 	TestReply         = "testreply"
