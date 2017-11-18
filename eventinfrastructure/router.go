@@ -23,7 +23,7 @@ type ConnectionRequest struct {
 	SubscriberEndpoint string `json:"subscriber-endpoint"` // hit this endpoint with your publisher address, and I will subscribe to you
 }
 
-func NewRouter(routingTable map[string][]string, wg sync.WaitGroup, port string, addrs ...string) *Router {
+func NewRouter(routingTable map[string][]string, wg sync.WaitGroup, port string, addrs []string) *Router {
 	color.Set(color.FgCyan)
 	defer color.Unset()
 
@@ -81,6 +81,7 @@ func (r *Router) HandleConnectionRequest(cr ConnectionRequest) error {
 	if len(cr.SubscriberEndpoint) > 0 && len(r.address) > 0 {
 		var response ConnectionRequest
 		response.PublisherAddr = r.address
+		log.Printf("Sending request to %s", response.PublisherAddr)
 
 		SendConnectionRequest(cr.SubscriberEndpoint, response, true)
 	}
@@ -97,7 +98,7 @@ func (r *Router) addSubscriptions() {
 			color.Set(color.FgCyan)
 			log.Printf("[router] Adding subscription to %s", request)
 			color.Unset()
-			r.router.Subscribe(request, 10, 3)
+			r.router.Subscribe(request, 100, 5*time.Second)
 		}
 	}
 }

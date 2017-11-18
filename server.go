@@ -12,14 +12,12 @@ import (
 
 	"github.com/byuoitav/av-api/dbo"
 	"github.com/byuoitav/device-monitoring-microservice/statusinfrastructure"
-	"github.com/byuoitav/event-router-microservice/eventinfrastructure"
+	ei "github.com/byuoitav/event-router-microservice/eventinfrastructure"
 	"github.com/fatih/color"
 	"github.com/jessemillar/health"
 	"github.com/labstack/echo"
 	"github.com/labstack/echo/middleware"
 )
-
-var dev bool
 
 func main() {
 	defer color.Unset()
@@ -27,37 +25,32 @@ func main() {
 
 	wg.Add(3)
 	port := "7000"
-
 	RoutingTable := make(map[string][]string)
-	RoutingTable[eventinfrastructure.Room] = []string{eventinfrastructure.UI}
-	RoutingTable[eventinfrastructure.APISuccess] = []string{
-		eventinfrastructure.Translator,
-		eventinfrastructure.UI,
-		eventinfrastructure.Room,
+
+	RoutingTable[ei.TestStart] = []string{ei.TestPleaseReply}    // local DM  --> local microservices (everyone listens to TestPleaseReply) and external routers
+	RoutingTable[ei.TestPleaseReply] = []string{ei.TestExternal} // external routers --> external DM's
+	RoutingTable[ei.TestExternalReply] = []string{ei.TestReply}  // external DM --> external router
+	RoutingTable[ei.TestReply] = []string{ei.TestEnd}            // local microservices and external DM --> local DM
+
+	RoutingTable[ei.Room] = []string{ei.UI}
+	RoutingTable[ei.APISuccess] = []string{
+		ei.Translator,
+		ei.UI,
+		ei.Room,
 	}
-	RoutingTable[eventinfrastructure.External] = []string{eventinfrastructure.UI}
-	RoutingTable[eventinfrastructure.APIError] = []string{eventinfrastructure.UI, eventinfrastructure.Translator}
-	RoutingTable[eventinfrastructure.Metrics] = []string{eventinfrastructure.Translator}
-	RoutingTable[eventinfrastructure.UIFeature] = []string{eventinfrastructure.Room}
+	RoutingTable[ei.External] = []string{ei.UI}
+	RoutingTable[ei.APIError] = []string{ei.UI, ei.Translator}
+	RoutingTable[ei.Metrics] = []string{ei.Translator}
+	RoutingTable[ei.UIFeature] = []string{ei.Room}
 
-	// Test event routing
-	RoutingTable[eventinfrastructure.TestStart] = []string{eventinfrastructure.TestPleaseReply}
-	RoutingTable[eventinfrastructure.TestPleaseReply] = []string{eventinfrastructure.TestExternal}
-	RoutingTable[eventinfrastructure.TestExternalReply] = []string{eventinfrastructure.TestReply}
-	RoutingTable[eventinfrastructure.TestReply] = []string{eventinfrastructure.TestEnd}
-
-	SubscribeTable := make(map[string]string)
-	SubscribeTable["localhost:7001"] = ""
-	SubscribeTable["localhost:7002"] = "localhost:6998/subscribe"
-	SubscribeTable["localhost:7003"] = "localhost:8888/subscribe"
-	SubscribeTable["localhost:7004"] = ""
+	var nodes []string
+	addrs := strings.Split(os.Getenv("EVENT_NODE_ADDRESSES"), ",")
+	for _, addr := range addrs {
+		nodes = append(nodes, addr)
+	}
 
 	// create the router
-	router := eventinfrastructure.NewRouter(RoutingTable, wg, port)
-
-	// subscribe to each key in the SubscribeTable
-	// and ask each router to subscribe
-	go DoSubscriptionTable(router, SubscribeTable)
+	router := ei.NewRouter(RoutingTable, wg, port, nodes)
 
 	server := echo.New()
 	server.Pre(middleware.RemoveTrailingSlash())
@@ -73,8 +66,16 @@ func main() {
 	wg.Wait()
 }
 
-func SubscribeOutsidePi(router *eventinfrastructure.Router) {
-	ip := eventinfrastructure.GetIP()
+func SubscribeOutsidePi(router *ei.Router) {
+	devhn := os.Getenv("DEVELOPMENT_HOSTNAME")
+	if len(devhn) > 0 {
+		color.Set(color.FgYellow)
+		log.Printf("Development machine. Using hostname %s", devhn)
+		color.Unset()
+	}
+
+	ip := ei.GetIP()
+
 	pihn := os.Getenv("PI_HOSTNAME")
 	if len(pihn) == 0 {
 		log.Fatalf("PI_HOSTNAME is not set.")
@@ -84,7 +85,9 @@ func SubscribeOutsidePi(router *eventinfrastructure.Router) {
 	for {
 		devices, err := dbo.GetDevicesByBuildingAndRoomAndRole(values[0], values[1], "EventRouter")
 		if err != nil {
-			log.Printf("[error] Connecting to the Configuration DB failed, retrying in 5 seconds.")
+			color.Set(color.FgRed)
+			log.Printf("Connecting to the Configuration DB failed, retrying in 5 seconds.")
+			color.Unset()
 			time.Sleep(5 * time.Second)
 		} else {
 			color.Set(color.FgYellow, color.Bold)
@@ -93,7 +96,7 @@ func SubscribeOutsidePi(router *eventinfrastructure.Router) {
 
 			addresses := []string{}
 			for _, device := range devices {
-				if !dev {
+				if len(devhn) == 0 {
 					if strings.EqualFold(device.GetFullName(), pihn) {
 						continue
 					}
@@ -101,7 +104,7 @@ func SubscribeOutsidePi(router *eventinfrastructure.Router) {
 				addresses = append(addresses, device.Address+":6999/subscribe")
 			}
 
-			var cr eventinfrastructure.ConnectionRequest
+			var cr ei.ConnectionRequest
 			cr.PublisherAddr = ip + ":7000"
 			cr.SubscriberEndpoint = fmt.Sprintf("http://%s:6999/subscribe", ip)
 
@@ -114,26 +117,9 @@ func SubscribeOutsidePi(router *eventinfrastructure.Router) {
 				color.Set(color.FgYellow, color.Bold)
 				log.Printf("Creating connection with %s (%s)", address, host)
 				color.Unset()
-				go eventinfrastructure.SendConnectionRequest("http://"+address, cr, false)
+				go ei.SendConnectionRequest("http://"+address, cr, false)
 			}
 			return
-		}
-	}
-}
-
-func DoSubscriptionTable(router *eventinfrastructure.Router, table map[string]string) {
-	hn := os.Getenv("PI_HOSTNAME")
-	var cr eventinfrastructure.ConnectionRequest
-	cr.PublisherAddr = hn + ":7000"
-
-	for k, v := range table {
-		router.NewSubscriptionChan <- k
-
-		if len(v) > 0 {
-			color.Set(color.FgYellow, color.Bold)
-			log.Printf("Creating connection with %s", v)
-			color.Unset()
-			go eventinfrastructure.SendConnectionRequest("http://"+v, cr, true)
 		}
 	}
 }
