@@ -31,6 +31,8 @@ const Metrics = "metrics"
 
 const UIFeature = "uifeature"
 
+const RoomDivide = "roomdivide"
+
 // for measuring status of event routing
 const (
 	TestStart         = "teststart"

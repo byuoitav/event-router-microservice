@@ -42,6 +42,11 @@ func main() {
 	RoutingTable[ei.APIError] = []string{ei.UI, ei.Translator}
 	RoutingTable[ei.Metrics] = []string{ei.Translator}
 	RoutingTable[ei.UIFeature] = []string{ei.Room}
+	RoutingTable[ei.RoomDivide] = []string{
+		ei.Translator,
+		ei.UI,
+		ei.Room,
+	}
 
 	var nodes []string
 	addrs := strings.Split(os.Getenv("EVENT_NODE_ADDRESSES"), ",")
