@@ -93,9 +93,7 @@ func (r *Router) addSubscriptions() {
 		select {
 		case request, ok := <-r.NewSubscriptionChan:
 			if !ok {
-				color.Set(color.FgHiRed)
-				log.Printf("[error] New subscription channel closed")
-				color.Unset()
+				log.Printf("%s", color.HiRedString("[error] New subscription channel closed"))
 			}
 			color.Set(color.FgCyan)
 			log.Printf("[router] Adding subscription to %s", request)
