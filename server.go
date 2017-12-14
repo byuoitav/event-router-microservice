@@ -26,7 +26,6 @@ func main() {
 	wg.Add(3)
 	port := "7000"
 	RoutingTable := make(map[string][]string)
-
 	RoutingTable[ei.TestStart] = []string{ei.TestPleaseReply}    // local DM  --> local microservices (everyone listens to TestPleaseReply) and external routers
 	RoutingTable[ei.TestPleaseReply] = []string{ei.TestExternal} // external routers --> external DM's
 	RoutingTable[ei.TestExternalReply] = []string{ei.TestReply}  // external DM --> external router
@@ -47,6 +46,9 @@ func main() {
 		ei.UI,
 		ei.Room,
 	}
+
+	//pretty print the routing table
+	PrettyPrint(RoutingTable)
 
 	var nodes []string
 	addrs := strings.Split(os.Getenv("EVENT_NODE_ADDRESSES"), ",")
@@ -69,6 +71,22 @@ func main() {
 
 	server.Start(":6999")
 	wg.Wait()
+}
+
+func PrettyPrint(table map[string][]string) {
+
+	color.Set(color.FgHiWhite)
+
+	log.Printf("Printing Routing Table...")
+
+	for k, v := range table {
+		log.Printf("%v --> ", k)
+		for _, val := range v {
+			log.Printf("\t\t\t%v", val)
+		}
+	}
+	log.Printf("Done.")
+	color.Unset()
 }
 
 func SubscribeOutsidePi(router *ei.Router) {
