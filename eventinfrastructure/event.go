@@ -36,6 +36,7 @@ const (
 	INFO
 	HEARTBEAT
 	HEALTH
+	DIVISION
 )
 
 func (e EventType) String() string {
@@ -54,6 +55,8 @@ func (e EventType) String() string {
 		return "HEARTBEAT"
 	case HEALTH:
 		return "HEALTH"
+	case DIVISION:
+		return "DIVISION"
 	}
 	return ""
 }
@@ -67,6 +70,7 @@ const (
 	AWS
 	INTERNAL
 	STARTUP
+	ROOMDIVISION
 )
 
 func (e EventCause) String() string {
@@ -81,6 +85,8 @@ func (e EventCause) String() string {
 		return "INTERNAL"
 	case STARTUP:
 		return "STARTUP"
+	case ROOMDIVISION:
+		return "ROOMDIVISION"
 	}
 	return ""
 }

@@ -135,39 +135,11 @@
 			"notests": true
 		},
 		{
-			"importpath": "github.com/labstack/gommon/bytes",
+			"importpath": "github.com/labstack/gommon",
 			"repository": "https://github.com/labstack/gommon",
 			"vcs": "git",
-			"revision": "bf40841f7287bd5503a5ba2806e8dbf654716e59",
+			"revision": "57409ada9da0f2afad6664c49502f8c50fbd8476",
 			"branch": "master",
-			"path": "/bytes",
-			"notests": true
-		},
-		{
-			"importpath": "github.com/labstack/gommon/color",
-			"repository": "https://github.com/labstack/gommon",
-			"vcs": "git",
-			"revision": "bf40841f7287bd5503a5ba2806e8dbf654716e59",
-			"branch": "master",
-			"path": "color",
-			"notests": true
-		},
-		{
-			"importpath": "github.com/labstack/gommon/log",
-			"repository": "https://github.com/labstack/gommon",
-			"vcs": "git",
-			"revision": "bf40841f7287bd5503a5ba2806e8dbf654716e59",
-			"branch": "master",
-			"path": "log",
-			"notests": true
-		},
-		{
-			"importpath": "github.com/labstack/gommon/random",
-			"repository": "https://github.com/labstack/gommon",
-			"vcs": "git",
-			"revision": "bf40841f7287bd5503a5ba2806e8dbf654716e59",
-			"branch": "master",
-			"path": "random",
 			"notests": true
 		},
 		{
@@ -215,6 +187,14 @@
 			"repository": "https://github.com/valyala/fasttemplate",
 			"vcs": "git",
 			"revision": "dcecefd839c4193db0d35b88ec65b4c12d360ab0",
+			"branch": "master",
+			"notests": true
+		},
+		{
+			"importpath": "github.com/xuther/go-message-router",
+			"repository": "https://github.com/xuther/go-message-router",
+			"vcs": "git",
+			"revision": "56f4b2aac77553c48ed11b6ae708f096a0bc2ed3",
 			"branch": "master",
 			"notests": true
 		},
