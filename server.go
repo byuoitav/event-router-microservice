@@ -17,6 +17,7 @@ import (
 	"github.com/jessemillar/health"
 	"github.com/labstack/echo"
 	"github.com/labstack/echo/middleware"
+	"github.com/xuther/go-message-router/subscriber"
 )
 
 func main() {
@@ -64,6 +65,7 @@ func main() {
 	server.Use(middleware.CORS())
 
 	server.GET("/health", echo.WrapHandler(http.HandlerFunc(health.Check)))
+	server.GET("/debug/:type/:value", SetDebug)
 	server.GET("/mstatus", GetStatus)
 	server.POST("/subscribe", router.HandleRequest)
 
@@ -145,6 +147,27 @@ func SubscribeOutsidePi(router *ei.Router) {
 			return
 		}
 	}
+}
+
+func SetDebug(context echo.Context) error {
+	debugType := context.Param("type")
+	valStr := context.Param("value")
+	val := false
+
+	if strings.ToLower(valStr) == "on" {
+		val = true
+	}
+
+	switch strings.ToLower(debugType) {
+	case "message":
+		subscriber.MessageDebug = val
+		return context.JSON(http.StatusOK, fmt.Sprintf("Set message debug to %v", val))
+	case "membership":
+		subscriber.MembershipDebug = val
+		return context.JSON(http.StatusOK, fmt.Sprintf("Set membership debug to %v", val))
+	}
+
+	return context.JSON(http.StatusBadRequest, fmt.Sprintf("%v is not a valid debug type", debugType))
 }
 
 func GetStatus(context echo.Context) error {
