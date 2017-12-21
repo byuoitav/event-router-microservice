@@ -49,6 +49,6 @@ func (n *EventNode) PublishMessage(m base.Message) {
 	n.Node.Write(m)
 }
 
-func (n *EventNode) read() {
-	n.Node.Read()
+func (n *EventNode) Read() base.Message {
+	return n.Node.Read()
 }
