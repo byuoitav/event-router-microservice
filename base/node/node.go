@@ -38,7 +38,13 @@ func (n *Node) GetState() (string, interface{}) {
 	values := make(map[string]interface{})
 
 	values["router"] = n.RouterAddress
-	values["connection"] = fmt.Sprintf("%v => %v", n.Conn.LocalAddr().String(), n.Conn.RemoteAddr().String())
+
+	if n.Conn != nil {
+		values["connection"] = fmt.Sprintf("%v => %v", n.Conn.LocalAddr().String(), n.Conn.RemoteAddr().String())
+	} else {
+		values["connection"] = fmt.Sprintf("%v => %v", "Local", n.RouterAddress)
+	}
+
 	filters := []string{}
 	for filter := range n.filters {
 		filters = append(filters, filter)
