@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/byuoitav/event-router-microservice/base"
+	"github.com/fatih/color"
 	"github.com/gorilla/websocket"
 	"github.com/labstack/echo"
 )
@@ -18,7 +19,7 @@ const (
 	pongWait = 60 * time.Second
 
 	// Send pings to peer with this period. Must be less than pongWait.
-	pingPeriod = (pongWait * 9) / 10
+	pingPeriod = (pongWait * 5) / 10
 )
 
 var upgrader = websocket.Upgrader{
@@ -40,7 +41,7 @@ func (s *Subscription) readPump() {
 
 	s.conn.SetReadDeadline(time.Now().Add(pongWait))
 	s.conn.SetPongHandler(func(string) error {
-		log.Printf("Pongo old boy!\n")
+		log.Printf(color.HiCyanString("[%v] Pongo old boy!", s.conn.RemoteAddr()))
 		s.conn.SetReadDeadline(time.Now().Add(pongWait))
 		return nil
 	})
@@ -59,6 +60,7 @@ func (s *Subscription) readPump() {
 }
 
 func (s *Subscription) writePump() {
+	log.Printf(color.BlueString("Starting write pump with a ping timer of %v", pingPeriod))
 	ticker := time.NewTicker(pingPeriod)
 
 	defer func() {
@@ -83,6 +85,7 @@ func (s *Subscription) writePump() {
 
 		case <-ticker.C:
 			s.conn.SetWriteDeadline(time.Now().Add(writeWait))
+			log.Printf(color.HiCyanString("[%v] I'm hungry mother. I'm hungry", s.conn.RemoteAddr().String()))
 			if err := s.conn.WriteControl(websocket.PingMessage, nil, time.Now().Add(writeWait)); err != nil {
 				return
 			}
