@@ -18,6 +18,7 @@ type Router struct {
 }
 
 func (r *Router) StartRouter(RoutingTable map[string][]string) error {
+	r.routingTable = RoutingTable
 
 	for {
 		select {
@@ -80,6 +81,7 @@ func NewRouter() *Router {
 }
 
 func (r *Router) route(message base.Message) {
+	log.Printf(color.HiYellowString("Routing"))
 
 	headers, ok := r.routingTable[message.MessageHeader]
 	if !ok {
