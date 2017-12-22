@@ -39,7 +39,11 @@ func (s *Subscription) readPump() {
 	}()
 
 	s.conn.SetReadDeadline(time.Now().Add(pongWait))
-	s.conn.SetPongHandler(func(string) error { s.conn.SetReadDeadline(time.Now().Add(pongWait)); return nil })
+	s.conn.SetPongHandler(func(string) error {
+		log.Printf("Pongo old boy!\n")
+		s.conn.SetReadDeadline(time.Now().Add(pongWait))
+		return nil
+	})
 
 	for {
 		var message base.Message

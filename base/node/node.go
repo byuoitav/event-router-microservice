@@ -132,7 +132,7 @@ func (n *Node) readPump() {
 
 	n.Conn.SetPingHandler(
 		func(string) error {
-
+			log.Printf("Ping...is a name\n")
 			n.Conn.SetReadDeadline(time.Now().Add(pingWait))
 			n.Conn.WriteControl(websocket.PingMessage, []byte{}, time.Now().Add(writeWait))
 
