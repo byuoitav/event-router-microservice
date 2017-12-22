@@ -58,15 +58,17 @@ func (r *Router) ConnectToRouters(peerAddresses []string, RoutingTable map[strin
 	for _, addr := range peerAddresses {
 		log.Printf(color.BlueString("Connecting to peer Event Router: %v", addr))
 
-		bridge, err := StartBridge(addr, filters, r)
-		if err != nil {
-			log.Printf(color.HiRedString("Could not establish connection to the peer %v", addr))
-			continue
-		}
-		log.Printf(color.BlueString("Done"))
+		go func(addr string, filters []string) {
+			bridge, err := StartBridge(addr, filters, r)
+			if err != nil {
+				log.Printf(color.HiRedString("Could not establish connection to the peer %v", addr))
+				return
+			}
+			log.Printf(color.BlueString("Done connecting to peer %v", addr))
 
-		go bridge.ReadPassthrough()
-		r.routerConnections[bridge] = true
+			go bridge.ReadPassthrough()
+			r.routerConnections[bridge] = true
+		}(addr, filters)
 	}
 
 	return nil

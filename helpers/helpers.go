@@ -56,11 +56,11 @@ func GetStatus(context echo.Context, route *router.Router) error {
 	s["version"], err = statusinfrastructure.GetVersion("version.txt")
 	if err != nil {
 		s["version"] = "missing"
-		s["status"] = statusinfrastructure.StatusSick
-		s["status-info"] = fmt.Sprintf("Error: %s", err.Error())
+		s["statuscode"] = statusinfrastructure.StatusSick
+		s["statusinfo"] = fmt.Sprintf("Error: %s", err.Error())
 	} else {
-		s["status"] = statusinfrastructure.StatusOK
-		s["status-info"] = route.GetInfo()
+		s["statuscode"] = statusinfrastructure.StatusOK
+		s["statusinfo"] = route.GetInfo()
 	}
 
 	return context.JSON(http.StatusOK, s)
