@@ -89,10 +89,9 @@ func (n *Node) Start(RouterAddress string, filters []string, name string) error 
 
 func (n *Node) openConnection() error {
 	//open connection to the router
-	var dialer *websocket.Dialer
-
-	//set a timeout
-	dialer.HandshakeTimeout = 10 * time.Second
+	dialer := &websocket.Dialer{
+		HandshakeTimeout: 10 * time.Second,
+	}
 
 	conn, _, err := dialer.Dial(fmt.Sprintf("ws://%s/subscribe", n.RouterAddress), nil)
 	if err != nil {
