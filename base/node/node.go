@@ -54,8 +54,8 @@ func (n *Node) Start(RouterAddress string, filters []string, name string) error 
 	n.RouterAddress = RouterAddress
 	n.ReadQueue = make(chan base.Message, 4096)
 	n.WriteQueue = make(chan base.Message, 4096)
-	n.readDone = make(chan bool)
-	n.writeDone = make(chan bool)
+	n.readDone = make(chan bool, 1)
+	n.writeDone = make(chan bool, 1)
 	n.filters = make(map[string]bool)
 	n.Name = name
 
@@ -65,6 +65,7 @@ func (n *Node) Start(RouterAddress string, filters []string, name string) error 
 
 	err := n.openConnection()
 	if err != nil {
+		log.Printf(color.YellowString("Opening connection failed, retrying..."))
 
 		n.readDone <- true
 		n.writeDone <- true

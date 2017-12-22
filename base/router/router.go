@@ -47,12 +47,14 @@ func (r *Router) ConnectToRouters(peerAddresses []string) error {
 	}
 
 	for _, addr := range peerAddresses {
+		log.Printf(color.BlueString("Connecting to peer Event Router: %v", addr))
 
 		bridge, err := StartBridge(addr, filters, r)
 		if err != nil {
 			log.Printf(color.HiRedString("Could not establish connection to the peer %v", addr))
 			continue
 		}
+		log.Printf(color.BlueString("Done"))
 
 		go bridge.ReadPassthrough()
 		r.routerConnections[bridge] = true
@@ -67,11 +69,13 @@ func (r *Router) Stop() error {
 
 func NewRouter() *Router {
 	return &Router{
-		inChan:        make(chan base.Message, 1024),
-		outChan:       make(chan base.Message, 1024),
-		register:      make(chan *Subscription),
-		unregister:    make(chan *Subscription),
-		subscriptions: make(map[*Subscription]bool),
+		inChan:            make(chan base.Message, 1024),
+		outChan:           make(chan base.Message, 1024),
+		register:          make(chan *Subscription),
+		unregister:        make(chan *Subscription),
+		subscriptions:     make(map[*Subscription]bool),
+		routingTable:      make(map[string][]string),
+		routerConnections: make(map[*RouterBridge]bool),
 	}
 }
 
