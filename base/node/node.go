@@ -112,7 +112,7 @@ func (n *Node) openConnection() error {
 func (n *Node) retryConnection() {
 
 	//mark the connection as 'down'
-	n.state = "retrying"
+	n.state = n.state + " retrying"
 
 	log.Printf(color.HiMagentaString("[retry] Retrying connection, waiting for read and write pump to close before starting."))
 	//wait for read to say i'm done.
