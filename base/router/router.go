@@ -91,6 +91,7 @@ func (r *Router) route(message base.Message) {
 
 	for _, newHeader := range headers {
 		for sub := range r.subscriptions {
+			log.Printf(color.HiYellowString("Routing to %v", sub.conn.RemoteAddr().String()))
 			select {
 			case sub.send <- base.Message{MessageBody: message.MessageBody, MessageHeader: newHeader}:
 			default:
@@ -100,6 +101,7 @@ func (r *Router) route(message base.Message) {
 		}
 
 		for routerConn := range r.routerConnections {
+			log.Printf("Routing to routers")
 			routerConn.WritePassthrough(base.Message{MessageBody: message.MessageBody, MessageHeader: newHeader})
 		}
 
