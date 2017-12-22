@@ -31,6 +31,7 @@ type Node struct {
 	readDone      chan bool
 	writeDone     chan bool
 	lastPingTime  time.Time
+	state         string
 }
 
 func (n *Node) GetState() (string, interface{}) {
@@ -43,6 +44,7 @@ func (n *Node) GetState() (string, interface{}) {
 		filters = append(filters, filter)
 	}
 	values["filters"] = filters
+	values["state"] = n.state
 	values["last-ping-time"] = n.lastPingTime.Format(time.RFC3339)
 
 	return n.Name, values
@@ -52,6 +54,7 @@ func (n *Node) Start(RouterAddress string, filters []string, name string) error 
 
 	log.Printf(color.HiGreenString("Starting EventNode. Connecting to router: %v", RouterAddress))
 
+	n.state = "initializing"
 	n.RouterAddress = RouterAddress
 	n.ReadQueue = make(chan base.Message, 4096)
 	n.WriteQueue = make(chan base.Message, 4096)
@@ -76,6 +79,7 @@ func (n *Node) Start(RouterAddress string, filters []string, name string) error 
 	}
 
 	log.Printf(color.HiGreenString("Starting pumps..."))
+	n.state = "good"
 	go n.readPump()
 	go n.writePump()
 
@@ -101,6 +105,10 @@ func (n *Node) openConnection() error {
 }
 
 func (n *Node) retryConnection() {
+
+	//mark the connection as 'down'
+	n.state = "retrying"
+
 	log.Printf(color.HiMagentaString("[retry] Retrying connection, waiting for read and write pump to close before starting."))
 	//wait for read to say i'm done.
 	<-n.readDone
@@ -121,6 +129,8 @@ func (n *Node) retryConnection() {
 	}
 	//start the pumps again
 	log.Printf(color.HiGreenString("[Retry] Retry success. Starting pumps"))
+
+	n.state = "good"
 	go n.readPump()
 	go n.writePump()
 
@@ -131,6 +141,7 @@ func (n *Node) readPump() {
 	defer func() {
 		n.Conn.Close()
 		log.Printf(color.HiRedString("Connection to router %v is dying.", n.RouterAddress))
+		n.state = "down"
 
 		n.readDone <- true
 	}()
@@ -174,6 +185,8 @@ func (n *Node) writePump() {
 	defer func() {
 		n.Conn.Close()
 		log.Printf(color.HiRedString("Connection to router %v is dying. Trying to resurrect.", n.RouterAddress))
+		n.state = "down"
+
 		n.writeDone <- true
 
 		//try to reconnect
