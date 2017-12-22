@@ -38,6 +38,9 @@ func main() {
 	server.GET("/mstatus", func(context echo.Context) error {
 		return helpers.GetStatus(context, route)
 	})
+	server.GET("/messagelogs/:val", func(context echo.Context) error {
+		return helpers.SetMessageLogLevel(route, context)
+	})
 
 	server.GET("/subscribe", func(context echo.Context) error {
 		return router.ListenForNodes(route, context)

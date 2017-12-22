@@ -15,9 +15,16 @@ type Router struct {
 	subscriptions     map[*Subscription]bool
 	routingTable      map[string][]string
 	routerConnections map[*RouterBridge]bool
+	showMessageLogs   bool
+}
+
+func (r *Router) SetMessageLogs(value bool) {
+	r.showMessageLogs = value
 }
 
 func (r *Router) StartRouter(RoutingTable map[string][]string) error {
+
+	r.showMessageLogs = false
 	r.routingTable = RoutingTable
 
 	for {
@@ -38,14 +45,15 @@ func (r *Router) StartRouter(RoutingTable map[string][]string) error {
 }
 
 //ConnectToRouters takes a list of peer routers to connect to.
-func (r *Router) ConnectToRouters(peerAddresses []string) error {
+func (r *Router) ConnectToRouters(peerAddresses []string, RoutingTable map[string][]string) error {
 
 	//build our filters
 	filters := []string{}
 
-	for k := range r.routingTable {
+	for k := range RoutingTable {
 		filters = append(filters, k)
 	}
+	log.Printf(color.YellowString("filters: %v", filters))
 
 	for _, addr := range peerAddresses {
 		log.Printf(color.BlueString("Connecting to peer Event Router: %v", addr))
@@ -81,7 +89,9 @@ func NewRouter() *Router {
 }
 
 func (r *Router) route(message base.Message) {
-	log.Printf(color.HiYellowString("Routing"))
+	if r.showMessageLogs {
+		log.Printf(color.HiYellowString("Routing a message with header: %v", message.MessageHeader))
+	}
 
 	headers, ok := r.routingTable[message.MessageHeader]
 	if !ok {
@@ -89,9 +99,17 @@ func (r *Router) route(message base.Message) {
 		return
 	}
 
+	if r.showMessageLogs {
+		log.Printf(color.HiYellowString("We care.", message.MessageHeader))
+	}
 	for _, newHeader := range headers {
+		if r.showMessageLogs {
+			log.Printf(color.HiYellowString("Routing to %v", newHeader))
+		}
 		for sub := range r.subscriptions {
-			log.Printf(color.HiYellowString("Routing to %v", sub.conn.RemoteAddr().String()))
+			if r.showMessageLogs {
+				log.Printf(color.HiYellowString("sending to %v", sub.conn.RemoteAddr().String()))
+			}
 			select {
 			case sub.send <- base.Message{MessageBody: message.MessageBody, MessageHeader: newHeader}:
 			default:
@@ -101,20 +119,23 @@ func (r *Router) route(message base.Message) {
 		}
 
 		for routerConn := range r.routerConnections {
-			log.Printf("Routing to routers")
+			if r.showMessageLogs {
+				log.Printf(color.HiYellowString("sending to router %v", routerConn.Node.Conn.RemoteAddr().String()))
+			}
 			routerConn.WritePassthrough(base.Message{MessageBody: message.MessageBody, MessageHeader: newHeader})
 		}
 
 	}
 }
 
-func (r *Router) GetInfo() string {
+func (r *Router) GetInfo() map[string]interface{} {
 
-	toReturn := ""
+	states := make(map[string]interface{})
 
 	for v := range r.routerConnections {
-		toReturn += v.Node.GetState() + "\n\n"
+		k, val := v.Node.GetState()
+		states[k] = val
 	}
 
-	return toReturn
+	return states
 }

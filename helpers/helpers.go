@@ -17,6 +17,22 @@ import (
 	"github.com/labstack/echo"
 )
 
+func SetMessageLogLevel(route *router.Router, context echo.Context) error {
+	val := context.Param("val")
+	if strings.ToLower(val) == "true" {
+
+		route.SetMessageLogs(true)
+		return context.JSON(http.StatusOK, "ok")
+
+	} else if strings.ToLower(val) == "false" {
+		route.SetMessageLogs(false)
+		return context.JSON(http.StatusOK, "ok")
+
+	}
+
+	return context.JSON(http.StatusBadRequest, "Invalid value, must be true or false:")
+}
+
 func PrettyPrint(table map[string][]string) {
 
 	color.Set(color.FgHiWhite)
@@ -35,16 +51,16 @@ func PrettyPrint(table map[string][]string) {
 
 func GetStatus(context echo.Context, route *router.Router) error {
 
-	var s statusinfrastructure.Status
+	s := make(map[string]interface{})
 	var err error
-	s.Version, err = statusinfrastructure.GetVersion("version.txt")
+	s["version"], err = statusinfrastructure.GetVersion("version.txt")
 	if err != nil {
-		s.Version = "missing"
-		s.Status = statusinfrastructure.StatusSick
-		s.StatusInfo = fmt.Sprintf("Error: %s", err.Error())
+		s["version"] = "missing"
+		s["status"] = statusinfrastructure.StatusSick
+		s["status-info"] = fmt.Sprintf("Error: %s", err.Error())
 	} else {
-		s.Status = statusinfrastructure.StatusOK
-		s.StatusInfo = route.GetInfo()
+		s["status"] = statusinfrastructure.StatusOK
+		s["status-info"] = route.GetInfo()
 	}
 
 	return context.JSON(http.StatusOK, s)

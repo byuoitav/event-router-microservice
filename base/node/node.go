@@ -33,18 +33,19 @@ type Node struct {
 	lastPingTime  time.Time
 }
 
-func (n *Node) GetState() string {
-	toReturn := ""
-	toReturn += "Name: \t\t\t " + n.Name + "\n"
-	toReturn += fmt.Sprintf("Router: \t\t\t %v \n", n.RouterAddress)
-	toReturn += fmt.Sprintf("Connection: \t\t\t %v -> %v \n", n.Conn.LocalAddr().String, n.Conn.RemoteAddr().String())
-	toReturn += fmt.Sprintf("Filters:\n")
-	for filter := range n.filters {
-		toReturn += fmt.Sprintf("\t\t\t\t\t %v\n", filter)
-	}
-	toReturn += fmt.Sprintf("Last Ping Time: \t\t\t %v\n", n.lastPingTime.Format(time.RFC3339))
+func (n *Node) GetState() (string, interface{}) {
+	values := make(map[string]interface{})
 
-	return toReturn
+	values["router"] = n.RouterAddress
+	values["connection"] = fmt.Sprintf("%v => %v", n.Conn.LocalAddr().String(), n.Conn.RemoteAddr().String())
+	filters := []string{}
+	for filter := range n.filters {
+		filters = append(filters, filter)
+	}
+	values["filters"] = filters
+	values["last-ping-time"] = n.lastPingTime.Format(time.RFC3339)
+
+	return n.Name, values
 }
 
 func (n *Node) Start(RouterAddress string, filters []string, name string) error {
