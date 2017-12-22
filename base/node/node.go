@@ -87,6 +87,9 @@ func (n *Node) openConnection() error {
 	//open connection to the router
 	var dialer *websocket.Dialer
 
+	//set a timeout
+	dialer.HandshakeTimeout = 10 * time.Second
+
 	conn, _, err := dialer.Dial(fmt.Sprintf("ws://%s/subscribe", n.RouterAddress), nil)
 	if err != nil {
 		log.Printf(color.HiRedString("There was a problem establishing the websocket with %v : %v", n.RouterAddress, err.Error()))
