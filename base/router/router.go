@@ -90,7 +90,6 @@ func (r *Router) route(message base.Message) {
 	}
 
 	for _, newHeader := range headers {
-		log.Printf(color.HiYellowString("Say that to my face, you limp noodle!"))
 		for sub := range r.subscriptions {
 			log.Printf(color.HiYellowString("Routing to %v", sub.conn.RemoteAddr().String()))
 			select {
