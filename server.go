@@ -39,7 +39,7 @@ func main() {
 		return helpers.GetStatus(context, route)
 	})
 
-	server.POST("/subscribe", func(context echo.Context) error {
+	server.GET("/subscribe", func(context echo.Context) error {
 		return router.ListenForNodes(route, context)
 	})
 
