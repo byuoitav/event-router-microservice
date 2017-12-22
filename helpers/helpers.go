@@ -51,6 +51,7 @@ func GetStatus(context echo.Context, route *router.Router) error {
 }
 
 func GetOutsideAddresses() []string {
+	log.Printf(color.HiGreenString("Getting all routers in the room..."))
 
 	pihn := os.Getenv("PI_HOSTNAME")
 	if len(pihn) == 0 {
@@ -68,7 +69,7 @@ func GetOutsideAddresses() []string {
 			continue
 		}
 
-		log.Printf(color.HiYellowString("Connection to the Configuration DB established."))
+		log.Printf(color.BlueString("Connection to the Configuration DB established."))
 
 		regexStr := `-CP(\d+)$`
 		re := regexp.MustCompile(regexStr)
@@ -79,6 +80,7 @@ func GetOutsideAddresses() []string {
 		}
 
 		mynum, err := strconv.Atoi(matches[0][1])
+		log.Printf(color.YellowString("My processor Number: %v", mynum))
 
 		for _, device := range devices {
 
@@ -105,5 +107,6 @@ func GetOutsideAddresses() []string {
 		}
 		break
 	}
+	log.Printf(color.HiGreenString("Done. Found %v routers", len(addresses)))
 	return addresses
 }

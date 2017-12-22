@@ -48,6 +48,9 @@ func (n *Node) GetState() string {
 }
 
 func (n *Node) Start(RouterAddress string, filters []string, name string) error {
+
+	log.Printf(color.HiGreenString("Starting EventNode. Connecting to router: %v", RouterAddress))
+
 	n.RouterAddress = RouterAddress
 	n.ReadQueue = make(chan base.Message, 4096)
 	n.WriteQueue = make(chan base.Message, 4096)

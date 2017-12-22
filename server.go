@@ -28,6 +28,7 @@ func main() {
 		log.Printf(color.HiRedString("Could not create router. Error: %v", err.Error()))
 		return
 	}
+	log.Printf(color.HiGreenString("Router Started... Starting server."))
 
 	server := echo.New()
 	server.Pre(middleware.RemoveTrailingSlash())
