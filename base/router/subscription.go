@@ -99,7 +99,7 @@ func ListenForNodes(router *Router, context echo.Context) error {
 	// Allow collection of memory referenced by the caller by doing all work in
 	// new goroutines.
 	go subscription.writePump()
-	go subscription.readPump()
+	subscription.readPump()
 
-	return context.JSON(http.StatusOK, "Ok")
+	return nil
 }

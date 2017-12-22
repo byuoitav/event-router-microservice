@@ -71,7 +71,7 @@ func GetOutsideAddresses() []string {
 
 		log.Printf(color.BlueString("Connection to the Configuration DB established."))
 
-		regexStr := `-CP(\d+)$`
+		regexStr := `[a-zA-z]+(\d+)$`
 		re := regexp.MustCompile(regexStr)
 		matches := re.FindAllStringSubmatch(pihn, -1)
 		if len(matches) != 1 {
@@ -88,8 +88,9 @@ func GetOutsideAddresses() []string {
 			if strings.EqualFold(device.GetFullName(), pihn) {
 				continue
 			}
+			log.Printf(color.YellowString("Considering device: %v", device.Name))
 
-			matches = re.FindAllStringSubmatch(device.Address, -1)
+			matches = re.FindAllStringSubmatch(device.Name, -1)
 			if len(matches) != 1 {
 				continue
 			}
@@ -103,7 +104,7 @@ func GetOutsideAddresses() []string {
 				continue
 			}
 
-			addresses = append(addresses, device.Address)
+			addresses = append(addresses, device.Address+":7000")
 		}
 		break
 	}
