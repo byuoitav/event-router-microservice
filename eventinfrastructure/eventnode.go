@@ -1,209 +1,54 @@
 package eventinfrastructure
 
 import (
-	"bytes"
 	"encoding/json"
-	"log"
-	"strings"
-	"time"
 
-	"github.com/byuoitav/device-monitoring-microservice/statusinfrastructure"
-	"github.com/fatih/color"
-	"github.com/xuther/go-message-router/common"
-	"github.com/xuther/go-message-router/publisher"
-	"github.com/xuther/go-message-router/subscriber"
+	"github.com/byuoitav/event-router-microservice/base"
+	"github.com/byuoitav/event-router-microservice/base/node"
 )
 
 type EventNode struct {
-	Name  string
-	Port  string
-	Read  chan common.Message
-	Write chan common.Message
+	Name string
 
-	subscriber    subscriber.Subscriber
-	filters       []string
-	subscriptions chan string
-
-	publisher publisher.Publisher
+	Node *node.Node
 }
 
 // filters: an array of strings to filter events recieved by
 // port: a unique port to publish events on
 // addrs: addresses of subscriber to subscribe to
 // name: name of event node
-func NewEventNode(name, port string, filters []string, addrs ...string) *EventNode {
-	color.Set(color.FgBlue)
-	defer color.Unset()
+func NewEventNode(name string, filters []string, address string) *EventNode {
 	var n EventNode
-
-	n.Port = port
 	n.Name = name
+	n.Node = &node.Node{}
 
-	//
-	// create subscriber
-	var err error
-
-	n.subscriber, err = subscriber.NewSubscriber(20)
-	if err != nil {
-		color.Set(color.FgHiRed)
-		log.Fatalf("Failed to create subscriber. error: %s", err.Error())
-	}
-
-	// add respose filter to all microservices
-	addFilter := true
-	for _, filter := range filters {
-		if strings.EqualFold(filter, TestPleaseReply) {
-			addFilter = false
-		}
-	}
-	if addFilter {
-		filters = append(filters, TestPleaseReply)
-	}
-	n.filters = filters
-
-	n.subscriptions = make(chan string, 10)
-	go n.addSubscriptions()
-
-	// subscribe to each of the requested addresses
-	for _, addr := range addrs {
-		n.subscriptions <- addr
-	}
-
-	// read messages
-	n.Read = make(chan common.Message, 20)
-	go n.read()
-
-	//
-	// create publisher
-	n.publisher, err = publisher.NewPublisher(n.Port, 100, 10)
-	if err != nil {
-		color.Set(color.FgHiRed)
-		log.Fatalf("[error] Failed to create publisher. error: %s", err.Error())
-	}
-
-	n.Write = make(chan common.Message)
-
-	// listen and write
-	go n.publisher.Listen()
-	go n.write()
-
-	color.Set(color.FgGreen, color.Bold)
-	log.Printf("Event node '%s' created. Writing events on port: %s.", n.Name, n.Port)
-	log.Printf("Subscribed to events: %s", n.filters)
-	color.Unset()
+	n.Node.Start(address, filters, name)
 
 	return &n
 }
 
 func (n *EventNode) PublishEvent(e Event, eventType string) error {
-	toSend, err := json.Marshal(e)
-	if err != nil {
-		return err
-	}
-
-	header := [24]byte{}
-	copy(header[:], []byte(eventType))
-
-	n.Write <- common.Message{MessageHeader: header, MessageBody: toSend}
-	return nil
+	return n.PublishJSONMessageByEventType(eventType, e)
 }
 
 func (n *EventNode) PublishMessageByEventType(eventType string, body []byte) {
-	header := [24]byte{}
-	copy(header[:], []byte(eventType))
-
-	n.Write <- common.Message{MessageHeader: header, MessageBody: body}
+	n.Node.Write(base.Message{MessageHeader: eventType, MessageBody: body})
 }
 
 func (n *EventNode) PublishJSONMessageByEventType(eventType string, i interface{}) error {
-	header := [24]byte{}
-	copy(header[:], []byte(eventType))
-
-	body, err := json.Marshal(i)
+	toSend, err := json.Marshal(i)
 	if err != nil {
 		return err
 	}
 
-	n.Write <- common.Message{MessageHeader: header, MessageBody: body}
+	n.Node.Write(base.Message{MessageHeader: eventType, MessageBody: toSend})
 	return nil
 }
 
-func (n *EventNode) PublishMessage(m common.Message) {
-	n.Write <- m
+func (n *EventNode) PublishMessage(m base.Message) {
+	n.Node.Write(m)
 }
 
-func (n *EventNode) addSubscriptions() {
-	for {
-		select {
-		case addr, ok := <-n.subscriptions:
-			if !ok {
-				color.Set(color.FgHiRed)
-				log.Printf("subscriber address channel closed")
-				color.Unset()
-				return
-			}
-
-			color.Set(color.FgBlue)
-			log.Printf("Subscribing to %s", addr)
-			err := n.subscriber.Subscribe(addr, n.filters)
-			for err != nil {
-				color.Set(color.FgRed)
-				log.Printf("Failed to subscribe to %s. Retrying in 5 seconds", addr)
-				time.Sleep(5 * time.Second)
-
-				err = n.subscriber.Subscribe(addr, n.filters)
-			}
-			color.Unset()
-			color.Set(color.FgGreen)
-			log.Printf("Subscribed to %s", addr)
-			color.Unset()
-		}
-	}
-}
-
-func (n *EventNode) read() {
-	for {
-		message := n.subscriber.Read()
-
-		header := string(bytes.Trim(message.MessageHeader[:], "\x00"))
-		if strings.EqualFold(header, TestPleaseReply) {
-			color.Set(color.FgBlue, color.Bold)
-			log.Printf("Responding to event test")
-			color.Unset()
-
-			var s statusinfrastructure.EventNodeStatus
-			s.Name = n.Name
-
-			n.PublishJSONMessageByEventType(TestReply, s)
-		}
-
-		color.Set(color.FgBlue)
-		log.Printf("Recieved message: %s", message)
-		color.Unset()
-
-		n.Read <- message
-
-	}
-}
-
-func (n *EventNode) write() {
-	for {
-		select {
-		case message, ok := <-n.Write:
-			if !ok {
-				color.Set(color.FgHiRed)
-				log.Fatalf("publisher write channel closed")
-			}
-
-			color.Set(color.FgMagenta)
-			log.Printf("Publishing message: %s", message)
-
-			err := n.publisher.Write(message)
-			if err != nil {
-				color.Set(color.FgHiRed)
-				log.Printf("error publishing message: %s", err.Error())
-			}
-			color.Unset()
-		}
-	}
+func (n *EventNode) Read() base.Message {
+	return n.Node.Read()
 }

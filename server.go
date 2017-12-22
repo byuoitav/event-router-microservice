@@ -1,31 +1,56 @@
 package main
 
 import (
-	"fmt"
 	"log"
-	"net"
 	"net/http"
-	"os"
-	"strings"
-	"sync"
-	"time"
 
-	"github.com/byuoitav/av-api/dbo"
-	"github.com/byuoitav/device-monitoring-microservice/statusinfrastructure"
+	"github.com/byuoitav/event-router-microservice/base/router"
 	ei "github.com/byuoitav/event-router-microservice/eventinfrastructure"
+	"github.com/byuoitav/event-router-microservice/helpers"
 	"github.com/fatih/color"
 	"github.com/jessemillar/health"
 	"github.com/labstack/echo"
 	"github.com/labstack/echo/middleware"
-	"github.com/xuther/go-message-router/subscriber"
 )
 
 func main() {
 	defer color.Unset()
-	var wg sync.WaitGroup
 
-	wg.Add(3)
-	port := "7000"
+	RoutingTable := buildTable()
+
+	//pretty print the routing table
+	helpers.PrettyPrint(RoutingTable)
+
+	// create the router
+	addrs := helpers.GetOutsideAddresses()
+	route, err := ei.NewRouter(RoutingTable, addrs)
+	if err != nil {
+		log.Printf(color.HiRedString("Could not create router. Error: %v", err.Error()))
+		return
+	}
+	log.Printf(color.HiGreenString("Router Started... Starting server."))
+
+	server := echo.New()
+	server.Pre(middleware.RemoveTrailingSlash())
+	server.Use(middleware.CORS())
+
+	server.GET("/health", echo.WrapHandler(http.HandlerFunc(health.Check)))
+	server.GET("/mstatus", func(context echo.Context) error {
+		return helpers.GetStatus(context, route)
+	})
+	server.GET("/messagelogs/:val", func(context echo.Context) error {
+		return helpers.SetMessageLogLevel(route, context)
+	})
+
+	server.GET("/subscribe", func(context echo.Context) error {
+		return router.ListenForNodes(route, context)
+	})
+
+	server.Start(":7000")
+}
+
+func buildTable() map[string][]string {
+
 	RoutingTable := make(map[string][]string)
 	RoutingTable[ei.TestStart] = []string{ei.TestPleaseReply}    // local DM  --> local microservices (everyone listens to TestPleaseReply) and external routers
 	RoutingTable[ei.TestPleaseReply] = []string{ei.TestExternal} // external routers --> external DM's
@@ -48,140 +73,5 @@ func main() {
 		ei.Room,
 	}
 
-	//pretty print the routing table
-	PrettyPrint(RoutingTable)
-
-	var nodes []string
-	addrs := strings.Split(os.Getenv("EVENT_NODE_ADDRESSES"), ",")
-	for _, addr := range addrs {
-		nodes = append(nodes, addr)
-	}
-
-	// create the router
-	router := ei.NewRouter(RoutingTable, wg, port, nodes)
-
-	server := echo.New()
-	server.Pre(middleware.RemoveTrailingSlash())
-	server.Use(middleware.CORS())
-
-	server.GET("/health", echo.WrapHandler(http.HandlerFunc(health.Check)))
-	server.GET("/debug/:type/:value", SetDebug)
-	server.GET("/mstatus", GetStatus)
-	server.POST("/subscribe", router.HandleRequest)
-
-	go SubscribeOutsidePi(router)
-
-	server.Start(":6999")
-	wg.Wait()
-}
-
-func PrettyPrint(table map[string][]string) {
-
-	color.Set(color.FgHiWhite)
-
-	log.Printf("Printing Routing Table...")
-
-	for k, v := range table {
-		log.Printf("%v --> ", k)
-		for _, val := range v {
-			log.Printf("\t\t\t%v", val)
-		}
-	}
-	log.Printf("Done.")
-	color.Unset()
-}
-
-func SubscribeOutsidePi(router *ei.Router) {
-	devhn := os.Getenv("DEVELOPMENT_HOSTNAME")
-	if len(devhn) > 0 {
-		color.Set(color.FgYellow)
-		log.Printf("Development machine. Using hostname %s", devhn)
-		color.Unset()
-	}
-
-	ip := ei.GetIP()
-
-	pihn := os.Getenv("PI_HOSTNAME")
-	if len(pihn) == 0 {
-		log.Fatalf("PI_HOSTNAME is not set.")
-	}
-	values := strings.Split(strings.TrimSpace(pihn), "-")
-
-	for {
-		devices, err := dbo.GetDevicesByBuildingAndRoomAndRole(values[0], values[1], "EventRouter")
-		if err != nil {
-			color.Set(color.FgRed)
-			log.Printf("Connecting to the Configuration DB failed, retrying in 5 seconds.")
-			color.Unset()
-			time.Sleep(5 * time.Second)
-		} else {
-			color.Set(color.FgYellow, color.Bold)
-			log.Printf("Connection to the Configuration DB established.")
-			color.Unset()
-
-			addresses := []string{}
-			for _, device := range devices {
-				if len(devhn) == 0 {
-					if strings.EqualFold(device.GetFullName(), pihn) {
-						continue
-					}
-				}
-				addresses = append(addresses, device.Address+":6999/subscribe")
-			}
-
-			var cr ei.ConnectionRequest
-			cr.PublisherAddr = ip + ":7000"
-			cr.SubscriberEndpoint = fmt.Sprintf("http://%s:6999/subscribe", ip)
-
-			for _, address := range addresses {
-				split := strings.Split(address, ":")
-				host, err := net.LookupHost(split[0])
-				if err != nil {
-					log.Printf("error %s", err.Error())
-				}
-				color.Set(color.FgYellow, color.Bold)
-				log.Printf("Creating connection with %s (%s)", address, host)
-				color.Unset()
-				go ei.SendConnectionRequest("http://"+address, cr, false)
-			}
-			return
-		}
-	}
-}
-
-func SetDebug(context echo.Context) error {
-	debugType := context.Param("type")
-	valStr := context.Param("value")
-	val := false
-
-	if strings.ToLower(valStr) == "on" {
-		val = true
-	}
-
-	switch strings.ToLower(debugType) {
-	case "message":
-		subscriber.MessageDebug = val
-		return context.JSON(http.StatusOK, fmt.Sprintf("Set message debug to %v", val))
-	case "membership":
-		subscriber.MembershipDebug = val
-		return context.JSON(http.StatusOK, fmt.Sprintf("Set membership debug to %v", val))
-	}
-
-	return context.JSON(http.StatusBadRequest, fmt.Sprintf("%v is not a valid debug type", debugType))
-}
-
-func GetStatus(context echo.Context) error {
-	var s statusinfrastructure.Status
-	var err error
-	s.Version, err = statusinfrastructure.GetVersion("version.txt")
-	if err != nil {
-		s.Version = "missing"
-		s.Status = statusinfrastructure.StatusSick
-		s.StatusInfo = fmt.Sprintf("Error: %s", err.Error())
-	} else {
-		s.Status = statusinfrastructure.StatusOK
-		s.StatusInfo = ""
-	}
-
-	return context.JSON(http.StatusOK, s)
+	return RoutingTable
 }
