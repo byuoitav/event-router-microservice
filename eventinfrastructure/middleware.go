@@ -1,64 +1,16 @@
 package eventinfrastructure
 
 import (
-	"bytes"
-	"encoding/json"
-	"errors"
-	"fmt"
-	"io/ioutil"
 	"log"
 	"net"
-	"net/http"
 	"os"
 	"strings"
-	"time"
 
 	"github.com/fatih/color"
 )
 
 const ContextRouter = "router"
 const ContextEventNode = "eventnode"
-
-func SendConnectionRequest(url string, req ConnectionRequest, retry bool) error {
-	defer color.Unset()
-	body, err := json.Marshal(req)
-	if err != nil {
-		color.Set(color.FgHiRed)
-		log.Printf("[error] %s", err.Error())
-		return err
-	}
-
-	resp, err := http.Post(url, "application/json", bytes.NewBuffer(body))
-	count := 0
-	for (err != nil || resp.StatusCode != 200) && count < 12 {
-		color.Set(color.FgHiRed)
-		if resp != nil {
-			body, _ := ioutil.ReadAll(resp.Body)
-			log.Printf("[error] failed to post. Response: (%v) %s", resp.StatusCode, body)
-		} else {
-			log.Printf("[error] failed to post. Error: %s", err.Error())
-		}
-
-		if !retry {
-			break
-		}
-
-		log.Printf("Trying again in 5 seconds.")
-		time.Sleep(5 * time.Second)
-		resp, err = http.Post(url, "application/json", bytes.NewBuffer(body))
-		count++
-	}
-
-	if err == nil {
-		if resp.StatusCode == 200 {
-			color.Set(color.FgHiGreen)
-			log.Printf("Successfully posted connection request to %s", url)
-			resp.Body.Close()
-			return nil
-		}
-	}
-	return errors.New(fmt.Sprintf("failed to post connection request to %s", url))
-}
 
 func GetIP() string {
 	defer color.Unset()

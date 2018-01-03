@@ -18,6 +18,7 @@ type Event struct {
 //event info contains information about the event itself.
 type EventInfo struct {
 	Type           EventType  `json:"type"`
+	Requestor      string     `json:"requestor"`
 	EventCause     EventCause `json:"eventCause"`
 	Device         string     `json:"device"`
 	EventInfoKey   string     `json:"eventInfoKey"`
@@ -35,6 +36,7 @@ const (
 	INFO
 	HEARTBEAT
 	HEALTH
+	DIVISION
 )
 
 func (e EventType) String() string {
@@ -53,6 +55,8 @@ func (e EventType) String() string {
 		return "HEARTBEAT"
 	case HEALTH:
 		return "HEALTH"
+	case DIVISION:
+		return "DIVISION"
 	}
 	return ""
 }
@@ -66,6 +70,7 @@ const (
 	AWS
 	INTERNAL
 	STARTUP
+	ROOMDIVISION
 )
 
 func (e EventCause) String() string {
@@ -80,6 +85,8 @@ func (e EventCause) String() string {
 		return "INTERNAL"
 	case STARTUP:
 		return "STARTUP"
+	case ROOMDIVISION:
+		return "ROOMDIVISION"
 	}
 	return ""
 }

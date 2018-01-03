@@ -31,10 +31,12 @@ const Metrics = "metrics"
 
 const UIFeature = "uifeature"
 
+const RoomDivide = "roomdivide"
+
 // for measuring status of event routing
 const (
 	TestStart         = "teststart"
-	TestPleaseReply   = "testreply"
+	TestPleaseReply   = "testpleasereply"
 	TestExternal      = "testexternal"
 	TestExternalReply = "testexternalreply"
 	TestReply         = "testreply"
