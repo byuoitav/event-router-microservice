@@ -35,6 +35,7 @@ type Subscription struct {
 
 func (s *Subscription) readPump() {
 	defer func() {
+		log.Printf(color.HiBlueString("[%v] read pump closing", s.conn.RemoteAddr()))
 		s.router.unregister <- s
 		s.conn.Close()
 	}()
