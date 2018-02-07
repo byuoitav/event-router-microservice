@@ -8,6 +8,7 @@ import (
 	"regexp"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/byuoitav/av-api/dbo"
@@ -16,6 +17,8 @@ import (
 	"github.com/fatih/color"
 	"github.com/labstack/echo"
 )
+
+var dev sync.Once
 
 func SetMessageLogLevel(route *router.Router, context echo.Context) error {
 	val := context.Param("val")
@@ -99,9 +102,11 @@ func GetOutsideAddresses() []string {
 		log.Printf(color.YellowString("My processor Number: %v", mynum))
 
 		for _, device := range devices {
-
 			if len(os.Getenv("DEV_ROUTER")) > 0 {
 				addresses = append(addresses, device.Address+":7000")
+				dev.Do(func() {
+					log.Printf(color.HiYellowString("Development device. Adding all event routers..."))
+				})
 				continue
 			}
 
