@@ -100,6 +100,11 @@ func GetOutsideAddresses() []string {
 
 		for _, device := range devices {
 
+			if len(os.Getenv("DEV_ROUTER")) > 0 {
+				addresses = append(addresses, device.Address+":7000")
+				continue
+			}
+
 			//check if he's me
 			if strings.EqualFold(device.GetFullName(), pihn) {
 				continue
