@@ -11,7 +11,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/byuoitav/av-api/dbo"
+	"github.com/byuoitav/common/db"
 	"github.com/byuoitav/device-monitoring-microservice/statusinfrastructure"
 	"github.com/byuoitav/event-router-microservice/base/router"
 	"github.com/fatih/color"
@@ -80,8 +80,10 @@ func GetOutsideAddresses() []string {
 	values := strings.Split(strings.TrimSpace(pihn), "-")
 	addresses := []string{}
 
+	roomID := fmt.Sprintf("%s-%s", values[0], values[1])
+
 	for {
-		devices, err := dbo.GetDevicesByBuildingAndRoomAndRole(values[0], values[1], "EventRouter")
+		devices, err := db.GetDB().GetDevicesByRoomAndRole(roomID, "EventRouter")
 		if err != nil {
 			log.Printf(color.RedString("Connecting to the Configuration DB failed, retrying in 5 seconds."))
 			time.Sleep(5 * time.Second)
@@ -111,7 +113,7 @@ func GetOutsideAddresses() []string {
 			}
 
 			//check if he's me
-			if strings.EqualFold(device.GetFullName(), pihn) {
+			if strings.EqualFold(device.ID, pihn) {
 				continue
 			}
 			log.Printf(color.YellowString("Considering device: %v", device.Name))
