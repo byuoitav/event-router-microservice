@@ -4,9 +4,9 @@ import (
 	"log"
 	"net/http"
 
-	"github.com/byuoitav/event-router-microservice/base/router"
-	ei "github.com/byuoitav/event-router-microservice/eventinfrastructure"
+	ei "github.com/byuoitav/common/events"
 	"github.com/byuoitav/event-router-microservice/helpers"
+	"github.com/byuoitav/messenger"
 	"github.com/fatih/color"
 	"github.com/jessemillar/health"
 	"github.com/labstack/echo"
@@ -43,7 +43,11 @@ func main() {
 	})
 
 	server.GET("/subscribe", func(context echo.Context) error {
-		return router.ListenForNodes(route, context)
+		err := messenger.ListenForNodes(route, context.Response().Writer, context.Request())
+		if err != nil {
+			return context.JSON(http.StatusInternalServerError, err.Error())
+		}
+		return nil
 	})
 
 	server.Start(":7000")
