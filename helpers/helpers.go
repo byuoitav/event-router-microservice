@@ -83,21 +83,30 @@ func GetOutsideAddresses() []string {
 	roomID := fmt.Sprintf("%s-%s", values[0], values[1])
 
 	for {
+		//first we need to make sure that the databse is ready for us.
+		state, err := db.GetDB().GetStatus()
+		if (err != nil || state != "completed") && len(os.Getenv("DEV_ROUTER")) > 0 {
+			log.Printf(color.RedString("Database replication in state %v. Retrying in 5 seconds.", state))
+			time.Sleep(5 * time.Second)
+			continue
+		}
+
 		devices, err := db.GetDB().GetDevicesByRoomAndRole(roomID, "EventRouter")
 		if err != nil {
 			log.Printf(color.RedString("Connecting to the Configuration DB failed, retrying in 5 seconds."))
 			time.Sleep(5 * time.Second)
 			continue
 		}
+
 		if len(devices) == 0 {
 			//there's a chance that there ARE routers in the room, but the initial database replication is occuring.
+			//we're good, keep going
 			state, err := db.GetDB().GetStatus()
 			if err != nil || state != "completed" {
 				log.Printf(color.RedString("Database replication in state %v. Retrying in 5 seconds.", state))
 				time.Sleep(5 * time.Second)
 				continue
 			}
-			//we're good, keep going
 		}
 
 		log.Printf(color.BlueString("Connection to the Configuration DB established."))
