@@ -39,7 +39,6 @@ func SetMessageLogLevel(route *messenger.Router, context echo.Context) error {
 func PrettyPrint(table map[string][]string) {
 
 	color.Set(color.FgHiWhite)
-
 	log.Printf("Printing Routing Table...")
 
 	for k, v := range table {
@@ -85,7 +84,7 @@ func GetOutsideAddresses() []string {
 	for {
 		//first we need to make sure that the databse is ready for us.
 		state, err := db.GetDB().GetStatus()
-		if (err != nil || state != "completed") && len(os.Getenv("DEV_ROUTER")) > 0 {
+		if (err != nil || state != "completed") && !len(os.Getenv("DEV_ROUTER")) > 0 {
 			log.Printf(color.RedString("Database replication in state %v. Retrying in 5 seconds.", state))
 			time.Sleep(5 * time.Second)
 			continue
