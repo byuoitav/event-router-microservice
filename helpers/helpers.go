@@ -90,6 +90,7 @@ func GetOutsideAddresses() []string {
 			time.Sleep(5 * time.Second)
 			continue
 		}
+		log.Printf(color.GreenString("Database replication state: %v", state))
 
 		devices, err := db.GetDB().GetDevicesByRoomAndRole(roomID, "EventRouter")
 		if err != nil {
