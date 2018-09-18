@@ -89,6 +89,16 @@ func GetOutsideAddresses() []string {
 			time.Sleep(5 * time.Second)
 			continue
 		}
+		if len(devices) == 0 {
+			//there's a chance that there ARE routers in the room, but the initial database replication is occuring.
+			state, err := db.GetDB().GetStatus()
+			if err != nil || state != "completed" {
+				log.Printf(color.RedString("Database replication in state %v. Retrying in 5 seconds.", state))
+				time.Sleep(5 * time.Second)
+				continue
+			}
+			//we're good, keep going
+		}
 
 		log.Printf(color.BlueString("Connection to the Configuration DB established."))
 
