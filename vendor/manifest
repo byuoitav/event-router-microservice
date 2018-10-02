@@ -69,21 +69,11 @@
 			"notests": true
 		},
 		{
-			"importpath": "github.com/golang/protobuf/proto",
+			"importpath": "github.com/golang/protobuf",
 			"repository": "https://github.com/golang/protobuf",
 			"vcs": "git",
-			"revision": "0a4f71a498b7c4812f64969510bcb4eca251e33a",
+			"revision": "b4deda0973fb4c70b50d226b1af49f3da59f5265",
 			"branch": "master",
-			"path": "/proto",
-			"notests": true
-		},
-		{
-			"importpath": "github.com/golang/protobuf/ptypes/any",
-			"repository": "https://github.com/golang/protobuf",
-			"vcs": "git",
-			"revision": "0a4f71a498b7c4812f64969510bcb4eca251e33a",
-			"branch": "master",
-			"path": "ptypes/any",
 			"notests": true
 		},
 		{
@@ -330,6 +320,15 @@
 			"vcs": "git",
 			"revision": "ad2570cd3913654e00c5f0183b39d2f998e54046",
 			"branch": "master",
+			"notests": true
+		},
+		{
+			"importpath": "google.golang.org/genproto/protobuf/field_mask",
+			"repository": "https://github.com/google/go-genproto",
+			"vcs": "git",
+			"revision": "86e600f69ee4704c6efbf6a2a40a5c10700e76c2",
+			"branch": "master",
+			"path": "/protobuf/field_mask",
 			"notests": true
 		},
 		{
