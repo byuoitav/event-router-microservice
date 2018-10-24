@@ -81,7 +81,7 @@ func GetOutsideAddresses() []string {
 
 	roomID := fmt.Sprintf("%s-%s", values[0], values[1])
 
-	for {
+	for len(os.Getenv("LOCAL_ENVIRONMENT")) > 0 {
 		//first we need to make sure that the databse is ready for us.
 		state, err := db.GetDB().GetStatus()
 		if (err != nil || state != "completed") && !(len(os.Getenv("DEV_ROUTER")) > 0 || len(os.Getenv("STOP_REPLICATION")) > 0) {
